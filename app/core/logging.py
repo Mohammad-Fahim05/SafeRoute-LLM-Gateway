@@ -11,14 +11,19 @@ from app.core.request_context import get_request_id
 
 class JSONFormatter(logging.Formatter):
     """Custom JSON formatter producing structured log entries."""
-
     def format(self, record: logging.LogRecord) -> str:
+        cid = getattr(record, "client_id", None)
+        if not cid:
+            from app.core.request_context import get_client_id
+            cid = get_client_id()
+
         log_obj: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
             "request_id": getattr(record, "request_id", None) or get_request_id(),
+            "client_id": cid,
         }
 
         # Include structured extra fields if provided

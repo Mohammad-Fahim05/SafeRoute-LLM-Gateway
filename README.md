@@ -1,23 +1,31 @@
 # SafeRoute LLM Gateway
 
-SafeRoute is a lightweight, reliable, and observable LLM Gateway built with Python and FastAPI. It sits between client applications and AI model providers, standardizing chat completions, enforcing safety guardrails, and providing unified error handling, structured logging, and observability.
+SafeRoute is a lightweight, reliable, and observable LLM Gateway built with Python and FastAPI. It sits between client applications and AI model providers, standardizing chat completions, enforcing security and authentication, managing timeouts, and providing unified error handling, structured logging, and observability.
 
 ---
 
 ## Table of Contents
 - [What is an LLM Gateway?](#what-is-an-llm-gateway)
 - [The Problem SafeRoute Solves](#the-problem-saferoute-solves)
+- [Gateway Keys vs. Upstream Provider Keys](#gateway-keys-vs-upstream-provider-keys)
 - [Architecture Diagram](#architecture-diagram)
-- [Phase 1: What is Implemented vs. What is NOT Implemented](#phase-1-what-is-implemented-vs-what-is-not-implemented)
+- [Phase Implementation Status](#phase-implementation-status)
 - [Project Structure](#project-structure)
 - [Setup and Installation](#setup-and-installation)
-- [Environment Configuration](#environment-configuration)
+- [Client API-Key Authentication (Phase 2)](#client-api-key-authentication-phase-2)
+  - [Security Design (HMAC-SHA256)](#security-design-hmac-sha256)
+  - [Generating a New Client API Key](#generating-a-new-client-api-key)
+  - [Configuring and Revoking Keys](#configuring-and-revoking-keys)
+- [Ollama Provider Integration (Phase 2)](#ollama-provider-integration-phase-2)
+  - [Installing and Running Local Ollama](#installing-and-running-local-ollama)
+  - [Pulling a Suitable Model](#pulling-a-suitable-model)
+  - [Configuring the Gateway for Ollama vs. Mock](#configuring-the-gateway-for-ollama-vs-mock)
 - [Running the Gateway](#running-the-gateway)
 - [API Reference & Examples](#api-reference--examples)
   - [Liveness Check (`GET /health`)](#liveness-check-get-health)
   - [Readiness Check (`GET /ready`)](#readiness-check-get-ready)
-  - [Chat Completion (`POST /v1/chat/completions`)](#chat-completion-post-v1chatcompletions)
-  - [Standardized Error Responses](#standardized-error-responses)
+  - [Authenticated Chat Completion (`POST /v1/chat/completions`)](#authenticated-chat-completion-post-v1chatcompletions)
+  - [Authentication & Validation Error Responses](#authentication--validation-error-responses)
 - [Running Tests](#running-tests)
 - [Known Limitations & Next Planned Phase](#known-limitations--next-planned-phase)
 
@@ -25,28 +33,46 @@ SafeRoute is a lightweight, reliable, and observable LLM Gateway built with Pyth
 
 ## What is an LLM Gateway?
 
-An **LLM Gateway** is a reverse proxy and middleware service tailored for Large Language Models. Instead of applications connecting directly to varied, disparate third-party model providers (such as OpenAI, Anthropic, Google, or local Ollama instances), applications send standard requests to the gateway.
+An **LLM Gateway** is a specialized reverse proxy and API orchestration layer for Large Language Models. Instead of every client application directly calling varied, disparate model providers (such as local Ollama instances, OpenAI, or Anthropic), clients send standard requests to SafeRoute.
 
-The gateway validates requests, enforces policies (rate limits, prompt safety, allowed models), orchestrates upstream calls, and normalizes responses and errors.
+The gateway validates requests, authenticates callers, routes to the appropriate backend provider, captures actual token metrics, logs structured audit events without leaking prompt data, and isolates the application from upstream outages.
 
 ```
-+--------------------+         +------------------------+         +----------------------+
-| Client Application | ------> | SafeRoute LLM Gateway  | ------> | Upstream LLM Backend |
-| (Your App / Agent) | <------ |  (Validation & Proxy)  | <------ |  (Mock, Ollama, etc) |
-+--------------------+         +------------------------+         +----------------------+
++--------------------+            +------------------------+            +----------------------+
+| Client Application |  Bearer    | SafeRoute LLM Gateway  |   Local    | Upstream LLM Backend |
+| (Your App / Agent) | ---------> | (Auth, Limits, Proxy)  | ---------> | (Mock or Ollama)     |
+|                    | <--------- |                        | <--------- |                      |
++--------------------+  JSON      +------------------------+   HTTP     +----------------------+
 ```
 
 ---
 
 ## The Problem SafeRoute Solves
 
-When teams build AI-powered features directly against upstream LLM APIs, they frequently encounter major challenges:
-1. **API Vendor Lock-in**: Different providers use divergent request/response shapes and error semantics.
-2. **Lack of Centralized Governance**: It is hard to enforce token budgets, allowed models, payload size limits, or timeouts across multiple apps.
-3. **Inconsistent Error Handling**: Upstream outages or timeouts often cause uncaught crashes or leak internal API tokens and stack traces to clients.
-4. **Poor Observability**: Debugging distributed systems without request correlation IDs or structured logging makes root-cause analysis difficult.
+When applications interact directly with model backends, critical engineering problems arise:
+1. **Uncontrolled API Access**: Anyone with network access can query costly model backends without authentication or rate controls.
+2. **Key Sprawl & Security Risks**: Embedding upstream cloud API keys in frontends or multiple microservices risks credential leakage.
+3. **Disparate APIs & Observability Gaps**: Tracking latency, errors, and token usage across different services is nearly impossible without a unified gateway.
+4. **Inconsistent Error Behavior**: Raw provider outages or timeouts cause uncaught exceptions or leak stack traces to clients.
 
-SafeRoute solves this by providing a unified, OpenAI-compatible entrypoint with built-in safety controls, request tracking, and standardized error handling.
+SafeRoute solves this by centralizing security, standardized request/response formatting, and robust error normalization.
+
+---
+
+## Gateway Keys vs. Upstream Provider Keys
+
+Understanding the distinction between these two keys is essential:
+
+| Feature | Gateway Client API Key (`gw_test_...`) | Upstream Provider Key (`sk-...`, etc.) |
+| :--- | :--- | :--- |
+| **Purpose** | Authenticates your client apps to the SafeRoute Gateway. | Authenticates SafeRoute to upstream AI cloud providers (future phases). |
+| **Who Has It?** | Your internal microservices, developers, or frontend apps. | Kept strictly private inside SafeRoute's server environment. |
+| **Format** | `gw_test_<random_urlsafe_bytes>` | Provider-specific (e.g. OpenAI `sk-...`, Claude `sk-ant-...`). |
+| **Storage in Gateway**| **Never stored in plaintext**. Only stored as a keyed HMAC-SHA256 verifier. | Stored encrypted or in environment variables on the gateway server. |
+| **Local Ollama** | Required to access SafeRoute. | Not applicable (local Ollama requires no upstream API key). |
+
+> [!IMPORTANT]
+> SafeRoute **never** accepts upstream provider API keys as gateway client credentials. Clients must present a valid gateway key.
 
 ---
 
@@ -54,53 +80,58 @@ SafeRoute solves this by providing a unified, OpenAI-compatible entrypoint with 
 
 ```mermaid
 flowchart TD
-    Client([Client Application]) -->|HTTP Request| Middleware[RequestTrackingMiddleware]
+    Client([Client Application]) -->|1. HTTP Request with Bearer Token| Middleware[RequestTrackingMiddleware]
     
-    subgraph Gateway Core [SafeRoute LLM Gateway Core]
-        Middleware -->|1. Extract or Generate| ReqID[Request ID & Context]
-        Middleware -->|2. Check Size| SizeLimit{Payload Size OK?}
-        SizeLimit -- Exceeded --> 413[Return 413 Payload Too Large]
-        SizeLimit -- OK --> Router[FastAPI APIRouter]
+    subgraph Gateway Core [SafeRoute LLM Gateway]
+        Middleware -->|2. Extract Request ID & Check Payload Size| AuthCheck{Verify API Key?}
         
-        Router -->|GET /health| HealthHandler[Health Check Handler]
-        Router -->|GET /ready| ReadyHandler[Readiness Check Handler]
-        Router -->|POST /v1/chat/completions| ChatHandler[Chat Completion Handler]
+        AuthCheck -- Public Health/Ready --> RouteDirect[Health / Ready Handlers]
+        AuthCheck -- Chat Completion Missing / Invalid Key --> 401[Return HTTP 401 Unauthorized]
+        AuthCheck -- Valid Key --> Router[FastAPI Chat Router]
         
-        ChatHandler -->|Validate Model| Allowlist{In Allowed Models?}
+        Router -->|Validate Model & Request Limits| Allowlist{In Allowed Models?}
         Allowlist -- No --> 400Model[Return 400 Invalid Model]
         Allowlist -- Yes --> ProviderRegistry[Provider Registry]
         
-        ProviderRegistry -->|Resolve| ProviderInterface[BaseLLMProvider Interface]
-        ProviderInterface -->|Execute with Timeout| MockProvider[Mock Provider Engine]
+        ProviderRegistry -->|ACTIVE_PROVIDER = 'mock'| MockEngine[MockProvider In-Memory]
+        ProviderRegistry -->|ACTIVE_PROVIDER = 'ollama'| OllamaEngine[OllamaProvider AsyncClient]
     end
 
-    MockProvider -->|Normalized Response| ChatHandler
-    ChatHandler -->|Response with X-Request-ID| Client
+    subgraph Upstream [Local AI Service]
+        OllamaEngine -->|POST /api/chat| OllamaService[Local Ollama Server: 11434]
+        OllamaService -->|Raw Response + Tokens| OllamaEngine
+    end
+
+    MockEngine -->|Normalized Response| Router
+    OllamaEngine -->|Normalized Response| Router
+    Router -->|Response Header: X-Request-ID| Client
 ```
 
 ---
 
-## Phase 1: What is Implemented vs. What is NOT Implemented
+## Phase Implementation Status
 
-### Implemented in Phase 1 (Foundation):
+### Implemented in Phase 1 & 2:
 - **Endpoints**: `GET /health`, `GET /ready`, and `POST /v1/chat/completions`.
-- **API Contract**: OpenAI-compatible non-streaming chat completions.
-- **Strict Validation**: Pydantic v2 schemas forbidding extra/unsupported fields, enforcing allowed roles (`system`, `user`, `assistant`), plain-text constraints, and temperature bounds.
-- **Provider Interface**: Abstract `BaseLLMProvider` decoupling route handlers from provider-specific logic.
-- **In-Memory Mock Provider**: Deterministic, cost-free mock provider with test usage estimation and simulation modes (`mock-timeout`, `mock-error`, `mock-malformed`). Pure in-memory execution with zero external network calls.
-- **Request ID Tracking**: Request IDs generated via UUID or validated from incoming `X-Request-ID` headers; tracked via `contextvars` and included in response headers.
-- **Structured JSON Logging**: Safe JSON logging that avoids logging prompt content, sensitive keys, or secrets.
-- **Standardized Error Responses**: Uniform error JSON format with specific HTTP status codes (400, 413, 422, 502, 504, 500) and no stack trace leaks.
-- **Automated Test Suite**: 40 unit and integration tests covering all error conditions and positive flows.
+- **Client Authentication (Phase 2)**: Bearer API key authentication via keyed HMAC-SHA256 (`gw_test_...`).
+- **Key Management Utility (Phase 2)**: CLI script (`scripts/manage_keys.py`) to generate keys, show them once, and output safe configuration hashes.
+- **Key Revocation (Phase 2)**: Configuration-backed revocation (`enabled: false` or key removal).
+- **Ollama Provider Adapter (Phase 2)**: Asynchronous HTTP adapter (`httpx.AsyncClient`) calling local Ollama (`/api/chat`), normalizing responses, and capturing real provider-reported token usage (`prompt_eval_count`, `eval_count`).
+- **Provider Switching (Phase 2)**: Toggle `ACTIVE_PROVIDER=mock` or `ACTIVE_PROVIDER=ollama`.
+- **Deterministic MockProvider**: Cost-free, in-memory testing engine with error and timeout simulation modes.
+- **Request ID Tracking**: Request IDs generated via UUID or validated from incoming `X-Request-ID` headers; tracked via `contextvars`.
+- **Structured JSON Logging**: Safe JSON logging that avoids logging prompt content, personal data, or secrets.
+- **Standardized Error Responses**: Uniform error JSON format with specific HTTP status codes (400, 401, 413, 422, 502, 504, 500).
+- **Automated Test Suite**: 68 unit and integration tests covering authentication, Ollama provider mapping, timeouts, and error isolation.
 
-### NOT Implemented in Phase 1 (Scheduled for Future Phases):
-- **Real Cloud Model Providers**: No live calls to OpenAI, Claude, Gemini, or Ollama yet.
-- **Persistent Storage**: No SQLite or PostgreSQL databases.
-- **Caching & Rate Limiting**: No Redis, exact response caching, or semantic caching.
+### NOT Implemented Yet (Scheduled for Future Phases):
+- **Cloud Providers**: Claude and Gemini API adapters are **not implemented yet**.
+- **Persistent Storage**: No SQLite or PostgreSQL databases yet (keys are currently configuration-backed).
+- **Caching**: No Redis, exact response caching, or semantic caching.
 - **Vector Search & Embeddings**: No vector databases or embedding models.
+- **Rate Limiting & Cost Tracking**: No per-client rate limiters or persistent cost accounting.
 - **PII & Prompt Injection Checks**: No content scanning or security classifiers.
-- **Streaming (SSE)**: `stream=true` is explicitly rejected.
-- **Authentication**: Client API-key authentication will be added in a subsequent phase.
+- **Streaming (SSE)**: `stream=true` remains explicitly rejected.
 - **Containers / K8s**: Docker and container orchestration.
 
 ---
@@ -109,40 +140,46 @@ flowchart TD
 
 ```text
 d:/SafeRoute LLM Gateway/
-├── .env.example              # Example environment configuration
+├── .env.example              # Example environment configuration with Phase 2 settings
 ├── .gitignore                # Git ignore patterns
 ├── pyproject.toml            # Project packaging and dependencies
 ├── README.md                 # Complete documentation
+├── scripts/
+│   └── manage_keys.py        # CLI tool to generate and manage gateway API keys
 ├── app/
-│   ├── __init__.py           # Application package
-│   ├── main.py               # FastAPI entry point & tracking middleware
+│   ├── __init__.py
+│   ├── main.py               # FastAPI entry point, tracking middleware, lifespan
 │   ├── config.py             # Settings using pydantic-settings
 │   ├── api/
 │   │   ├── __init__.py
-│   │   ├── routes.py         # /health, /ready, /v1/chat/completions
+│   │   ├── routes.py         # Endpoints with verify_api_key dependency
 │   │   └── schemas.py        # Strict Pydantic v2 schemas
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── errors.py         # Standardized error normalization & handlers
-│   │   ├── logging.py        # Safe structured JSON logger
-│   │   └── request_context.py# Request ID contextvars manager
+│   │   ├── auth.py           # HMAC-SHA256 verification & FastAPI auth dependency
+│   │   ├── errors.py         # Standardized error normalization & handlers (401, 502, 504)
+│   │   ├── logging.py        # Safe structured JSON logger (redacting secrets)
+│   │   └── request_context.py# Request ID and client ID contextvars manager
 │   └── providers/
 │       ├── __init__.py       # Provider registry & lookup
 │       ├── base.py           # Abstract BaseLLMProvider interface
-│       └── mock.py           # Deterministic in-memory mock provider
+│       ├── mock.py           # Deterministic in-memory mock provider
+│       └── ollama.py         # Local Ollama asynchronous HTTP provider adapter
 └── tests/
     ├── __init__.py
-    ├── conftest.py           # Pytest fixtures and settings overrides
+    ├── conftest.py           # Test settings overrides and authentication fixtures
     ├── unit/
-    │   ├── __init__.py
+    │   ├── test_auth.py      # HMAC verification and token parsing unit tests
     │   ├── test_config.py    # Config unit tests
     │   ├── test_schemas.py   # Pydantic validation unit tests
-    │   └── test_mock_provider.py # Mock provider & offline isolation tests
+    │   ├── test_mock_provider.py # Mock provider & offline isolation tests
+    │   └── test_ollama_provider.py # Ollama adapter tests using httpx.MockTransport
     └── integration/
-        ├── __init__.py
-        ├── test_health.py    # /health and /ready integration tests
+        ├── test_auth_integration.py # 401 missing, malformed, invalid, revoked tests
         ├── test_chat_completions.py # Chat completion integration tests
-        └── test_errors.py    # Timeouts, 502, 504, 400, 422, 500 error tests
+        ├── test_errors.py    # Timeouts, 502, 504, 400, 422, 500 error tests
+        ├── test_health.py    # Public /health and /ready integration tests
+        └── test_ollama_integration.py # Ollama provider integration & routing tests
 ```
 
 ---
@@ -174,26 +211,115 @@ pip install fastapi uvicorn pydantic pydantic-settings httpx pytest
 
 ---
 
-## Environment Configuration
+## Client API-Key Authentication (Phase 2)
 
-Copy the example file to `.env`:
+### Security Design (HMAC-SHA256)
 
+1. **Random High-Entropy Keys**: Keys are generated using Python's `secrets` module with prefix `gw_test_` (e.g. `gw_test_K_3j1nOxRuqXlIbZ8lumcq4d81l0oOe66UUujUfuWu8`).
+2. **Never Stored in Plaintext**: The server never saves the plaintext key anywhere.
+3. **Keyed HMAC-SHA256 Verifiers**: SafeRoute computes a cryptographic hash of the key combined with a server-side `AUTH_SECRET`:
+   $$\text{Verifier} = \text{HMAC-SHA256}(\text{AUTH\_SECRET}, \text{Plaintext Key})$$
+4. **Timing-Attack Resistance**: Verification uses `hmac.compare_digest` for constant-time comparison, preventing side-channel attacks.
+5. **Fail-Closed Architecture**: If `AUTH_SECRET` is missing or invalid, all authenticated requests are rejected immediately.
+
+---
+
+### Generating a New Client API Key
+
+Use the included key management utility:
+
+```bash
+python scripts/manage_keys.py create --client-id mobile_app --secret "your_strong_secret_at_least_16_chars"
+```
+
+Output:
+```text
+======================================================================
+SafeRoute Gateway Client API Key Generated
+======================================================================
+
+Client ID: mobile_app
+
+Plaintext API Key:
+  gw_test_K_3j1nOxRuqXlIbZ8lumcq4d81l0oOe66UUujUfuWu8
+
+  [!] CAUTION: This key is displayed only ONCE.
+      Store this key securely in your client environment.
+      SafeRoute never stores plaintext keys.
+
+----------------------------------------------------------------------
+Add this configuration entry to CLIENT_KEYS in your .env file:
+----------------------------------------------------------------------
+{
+  "client_id": "mobile_app",
+  "verifier": "938234e76a7ba60007f0f14532dba5cba9715e605feb4dfa3d0c415e604dee44",
+  "enabled": true
+}
+```
+
+---
+
+### Configuring and Revoking Keys
+
+Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-Available configuration options:
+Set your `AUTH_SECRET` and register your client key verifiers in `.env`:
+```env
+AUTH_ENABLED=true
+AUTH_SECRET="your_strong_secret_at_least_16_chars"
+CLIENT_KEYS='[{"client_id": "mobile_app", "verifier": "938234e76a7ba60007f0f14532dba5cba9715e605feb4dfa3d0c415e604dee44", "enabled": true}]'
+```
 
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `APP_ENV` | `development` | Deployment environment (`development`, `staging`, `production`, `test`) |
-| `ALLOWED_MODELS` | `mock-model,mock-timeout,mock-error,mock-malformed` | Comma-separated list of permitted model IDs |
-| `DEFAULT_MODEL` | `mock-model` | Default model identifier |
-| `MAX_REQUEST_SIZE_BYTES` | `1048576` (1MB) | Maximum HTTP payload size accepted |
-| `MAX_MESSAGES_PER_REQUEST` | `50` | Maximum message count per chat request |
-| `MAX_COMPLETION_TOKENS_LIMIT` | `4096` | Maximum allowed `max_completion_tokens` |
-| `PROVIDER_TIMEOUT_SECONDS` | `5.0` | Upstream provider timeout before returning 504 |
-| `LOG_LEVEL` | `INFO` | Logger verbosity level |
+#### How to Revoke or Disable a Key:
+- **To disable temporarily**: In `.env`, change `"enabled": true` to `"enabled": false`.
+- **To revoke permanently**: Remove the client object from the `CLIENT_KEYS` array in `.env`.
+- Restart the gateway for configuration changes to take effect.
+
+---
+
+## Ollama Provider Integration (Phase 2)
+
+### Installing and Running Local Ollama
+
+1. Download and install Ollama from [ollama.com](https://ollama.com).
+2. Start the Ollama local daemon:
+   ```bash
+   ollama serve
+   ```
+   By default, Ollama listens at `http://localhost:11434`.
+
+---
+
+### Pulling a Suitable Model
+
+For low-resource local machines, pull a lightweight model:
+```bash
+ollama pull llama3.2:1b
+```
+*(Alternative lightweight models: `phi3`, `qwen2.5:0.5b`, or `mistral`)*.
+
+---
+
+### Configuring the Gateway for Ollama vs. Mock
+
+In your `.env` file, choose your active provider:
+
+#### Option A: Running with Ollama (Local Model)
+```env
+ACTIVE_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:1b
+ALLOWED_MODELS=llama3.2:1b,phi3,mock-model
+```
+
+#### Option B: Running with MockProvider (Deterministic, Zero-Cost Tests)
+```env
+ACTIVE_PROVIDER=mock
+ALLOWED_MODELS=mock-model,mock-timeout,mock-error,mock-malformed
+```
 
 ---
 
@@ -205,17 +331,15 @@ Start the application with Uvicorn:
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-The server will be available at `http://127.0.0.1:8000`. Interactive OpenAPI documentation is available at `http://127.0.0.1:8000/docs`.
+The gateway will be available at `http://127.0.0.1:8000`. Interactive documentation is available at `http://127.0.0.1:8000/docs`.
 
 ---
 
 ## API Reference & Examples
 
 ### Liveness Check (`GET /health`)
+Public endpoint. Returns operational status.
 
-Returns basic service liveness.
-
-**Request:**
 ```bash
 curl -X GET http://127.0.0.1:8000/health
 ```
@@ -232,10 +356,8 @@ curl -X GET http://127.0.0.1:8000/health
 ---
 
 ### Readiness Check (`GET /ready`)
+Public endpoint. Verifies that active providers are reachable.
 
-Verifies that registered providers and dependencies are accessible.
-
-**Request:**
 ```bash
 curl -X GET http://127.0.0.1:8000/ready
 ```
@@ -252,28 +374,28 @@ curl -X GET http://127.0.0.1:8000/ready
 
 ---
 
-### Chat Completion (`POST /v1/chat/completions`)
+### Authenticated Chat Completion (`POST /v1/chat/completions`)
 
-Submits messages for non-streaming chat completion.
+Requires `Authorization: Bearer <gateway_api_key>`.
 
-**Request:**
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/chat/completions \
+  -H "Authorization: Bearer gw_test_K_3j1nOxRuqXlIbZ8lumcq4d81l0oOe66UUujUfuWu8" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mock-model",
+    "model": "llama3.2:1b",
     "messages": [
       {
         "role": "system",
-        "content": "You are a helpful assistant."
+        "content": "You are a concise assistant."
       },
       {
         "role": "user",
-        "content": "Explain what an LLM gateway does."
+        "content": "Explain what an LLM gateway is in one sentence."
       }
     ],
-    "temperature": 0.2,
-    "max_completion_tokens": 200,
+    "temperature": 0.3,
+    "max_completion_tokens": 100,
     "stream": false
   }'
 ```
@@ -281,92 +403,79 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 **Response (HTTP 200 OK):**
 ```json
 {
-  "id": "chatcmpl-mock-3b41f7f9d8e3",
+  "id": "chatcmpl-ollama-9f81a7b4c2d3",
   "object": "chat.completion",
-  "created": 1792865952,
-  "model": "mock-model",
+  "created": 1792866000,
+  "model": "llama3.2:1b",
   "choices": [
     {
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "This is a deterministic response from the SafeRoute mock provider."
+        "content": "An LLM gateway is a reverse proxy that centralizes security, routing, and monitoring between applications and AI models."
       },
       "finish_reason": "stop"
     }
   ],
   "usage": {
-    "prompt_tokens": 15,
-    "completion_tokens": 16,
-    "total_tokens": 31,
-    "is_mock_estimate": true
+    "prompt_tokens": 28,
+    "completion_tokens": 24,
+    "total_tokens": 52,
+    "is_mock_estimate": false
   }
 }
 ```
 
-*Response Header:* `X-Request-ID: req_5158b20427f9416986587767cadb11d9`
+*Response Header:* `X-Request-ID: req_8c1b827e8a324ab2a61bb819c9e83f21`
 
 ---
 
-### Standardized Error Responses
+### Authentication & Validation Error Responses
 
-All gateway errors follow a normalized structure:
-
+#### 1. Missing Authorization Header (HTTP 401)
 ```json
 {
   "error": {
-    "type": "error_category",
-    "code": "specific_error_code",
-    "message": "Human readable explanation",
-    "request_id": "req_uuid"
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "Missing Authorization header.",
+    "request_id": "req_1d4a0765c92849e7b270a6c22c0e7fb8"
   }
 }
 ```
 
-#### Example: Unsupported Field or Stream Requested (HTTP 400)
+#### 2. Invalid or Forged Key (HTTP 401)
 ```json
 {
   "error": {
-    "type": "invalid_request_error",
-    "code": "unsupported_parameter",
-    "message": "Streaming is not supported in Phase 1.",
-    "request_id": "req_c5a37aa113cb40b5a900898556955b08"
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "Invalid client API key.",
+    "request_id": "req_79c13b2c286d49959600a943a4e98f02"
   }
 }
 ```
 
-#### Example: Model Not in Allowlist (HTTP 400)
+#### 3. Disabled or Revoked Key (HTTP 401)
 ```json
 {
   "error": {
-    "type": "invalid_request_error",
-    "code": "invalid_model",
-    "message": "The model 'unapproved-gpt-4' is not permitted or supported. Allowed models: mock-model, mock-timeout, mock-error, mock-malformed",
-    "request_id": "req_993f885e33d0473cb22bc8c5bc170d49"
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "Client API key is disabled or revoked.",
+    "request_id": "req_88a6d41ef42144d49a37a9a9572c679a"
   }
 }
 ```
 
-#### Example: Provider Timeout (HTTP 504)
+#### 4. Upstream Ollama Service Unreachable (HTTP 502)
 ```json
 {
   "error": {
-    "type": "gateway_timeout_error",
-    "code": "gateway_timeout",
-    "message": "Upstream provider timed out after 5.0 seconds.",
-    "request_id": "req_424a935e3675420bb7eb611b2cc04a5d"
-  }
-}
-```
-
-#### Example: Schema Validation Failure (HTTP 422)
-```json
-{
-  "error": {
-    "type": "invalid_request_error",
-    "code": "validation_error",
-    "message": "body -> messages: List should have at least 1 item after validation, not 0",
-    "request_id": "req_83f6aa41712a449887b4ee732e98fa63"
+    "type": "bad_gateway_error",
+    "code": "provider_error",
+    "message": "Upstream Ollama service is unreachable or not running.",
+    "request_id": "req_9971ab01e91942e6a9f4c330df320ba1"
   }
 }
 ```
@@ -375,18 +484,27 @@ All gateway errors follow a normalized structure:
 
 ## Running Tests
 
-Execute the full automated test suite with `pytest`:
+Execute the automated test suite with `pytest`:
 
 ```bash
 pytest -v
 ```
 
-Expected output:
+Expected result:
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.13.5, pytest-8.3.4
-collected 40 items
+collected 68 items
 
+tests/integration/test_auth_integration.py::test_missing_authorization_header_returns_401 PASSED
+tests/integration/test_auth_integration.py::test_malformed_bearer_header_returns_401 PASSED
+tests/integration/test_auth_integration.py::test_invalid_key_returns_401 PASSED
+tests/integration/test_auth_integration.py::test_revoked_key_returns_401 PASSED
+tests/integration/test_auth_integration.py::test_valid_key_identifies_correct_client PASSED
+tests/integration/test_auth_integration.py::test_auth_rejection_occurs_before_provider_invocation PASSED
+tests/integration/test_auth_integration.py::test_auth_misconfigured_fails_safely PASSED
+tests/integration/test_auth_integration.py::test_logs_do_not_contain_plaintext_keys_or_secrets PASSED
+tests/integration/test_auth_integration.py::test_health_and_ready_endpoints_remain_public PASSED
 tests/integration/test_chat_completions.py::test_valid_chat_request_returns_documented_response PASSED
 tests/integration/test_chat_completions.py::test_custom_request_id_preserved PASSED
 tests/integration/test_chat_completions.py::test_invalid_custom_request_id_replaced_with_safe_id PASSED
@@ -410,6 +528,17 @@ tests/integration/test_errors.py::test_payload_too_large_rejected PASSED
 tests/integration/test_health.py::test_health_endpoint_success PASSED
 tests/integration/test_health.py::test_ready_endpoint_success PASSED
 tests/integration/test_health.py::test_ready_endpoint_failure PASSED
+tests/integration/test_ollama_integration.py::test_authenticated_ollama_request_with_mocked_transport PASSED
+tests/integration/test_ollama_integration.py::test_unknown_model_rejected_for_ollama PASSED
+tests/integration/test_ollama_integration.py::test_authenticated_mock_request_still_works PASSED
+tests/unit/test_auth.py::test_generate_api_key_format PASSED
+tests/unit/test_auth.py::test_compute_key_verifier_deterministic PASSED
+tests/unit/test_auth.py::test_compute_key_verifier_rejects_weak_secret PASSED
+tests/unit/test_auth.py::test_extract_bearer_token PASSED
+tests/unit/test_auth.py::test_authenticate_client_valid PASSED
+tests/unit/test_auth.py::test_authenticate_client_disabled PASSED
+tests/unit/test_auth.py::test_authenticate_client_invalid_key PASSED
+tests/unit/test_auth.py::test_authenticate_client_missing_auth_secret_fails_closed PASSED
 tests/unit/test_config.py::test_default_settings PASSED
 tests/unit/test_config.py::test_allowed_models_parsing_from_string PASSED
 tests/unit/test_config.py::test_allowed_models_from_list PASSED
@@ -418,6 +547,14 @@ tests/unit/test_mock_provider.py::test_mock_provider_error_simulation PASSED
 tests/unit/test_mock_provider.py::test_mock_provider_malformed_simulation PASSED
 tests/unit/test_mock_provider.py::test_mock_provider_makes_no_network_calls PASSED
 tests/unit/test_mock_provider.py::test_mock_provider_health_check PASSED
+tests/unit/test_ollama_provider.py::test_ollama_successful_response_mapping PASSED
+tests/unit/test_ollama_provider.py::test_ollama_missing_usage_handled_as_zero PASSED
+tests/unit/test_ollama_provider.py::test_ollama_connection_error PASSED
+tests/unit/test_ollama_provider.py::test_ollama_timeout_error PASSED
+tests/unit/test_ollama_provider.py::test_ollama_model_not_found PASSED
+tests/unit/test_ollama_provider.py::test_ollama_malformed_response PASSED
+tests/unit/test_ollama_provider.py::test_ollama_client_cleanup PASSED
+tests/unit/test_ollama_provider.py::test_ollama_health_check_probes PASSED
 tests/unit/test_schemas.py::test_valid_chat_message PASSED
 tests/unit/test_schemas.py::test_chat_message_rejects_empty_content PASSED
 tests/unit/test_schemas.py::test_chat_message_rejects_unsupported_role PASSED
@@ -428,21 +565,20 @@ tests/unit/test_schemas.py::test_request_forbids_extra_fields PASSED
 tests/unit/test_schemas.py::test_request_temperature_bounds PASSED
 tests/unit/test_schemas.py::test_request_max_tokens_positive PASSED
 
-============================= 40 passed in 0.57s ==============================
+============================= 68 passed in 0.92s ==============================
 ```
 
 ---
 
 ## Known Limitations & Next Planned Phase
 
-### Known Limitations
-- The gateway only interfaces with an in-memory mock provider.
-- Streaming responses (`stream: true`) are intentionally rejected until SSE streaming support is added.
-- Authentication (API keys) is not yet validated.
-- Requests and token metrics are logged to stdout but not persisted to a database.
+### Known Limitations of Phase 2
+- **Configuration-Backed Keys**: Client key verifiers are loaded from `.env` configuration rather than a dynamic database. Changes require restarting the application.
+- **Single Active Provider**: Models are routed based on `ACTIVE_PROVIDER` configuration; multi-provider concurrent fallback routing will come in later phases.
+- **Local Ollama Availability**: Ollama must be separately installed and running locally for live requests to succeed; if Ollama is not running, the gateway safely returns HTTP 502 (`provider_error`).
+- **Claude and Gemini Adapters**: Cloud API adapters for Claude and Gemini are explicitly **not implemented yet**.
+- **No Streaming**: SSE streaming (`stream: true`) remains unsupported until Phase 5.
 
-### Next Planned Phase (Phase 2 Preview)
-- Integration of a real local provider adapter (e.g. Ollama for open-source models).
-- Client API-key authentication middleware.
-- Request persistence and usage tracking (SQLite).
-- Latency and estimated cost calculation.
+### Next Planned Phase (Phase 3 Preview)
+- Persistent SQLite database for client records, API key management, and request metadata.
+- Automated usage, latency, and estimated-cost tracking.

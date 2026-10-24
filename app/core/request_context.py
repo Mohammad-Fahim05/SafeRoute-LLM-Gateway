@@ -28,3 +28,18 @@ def get_request_id() -> str:
         rid = f"req_{uuid.uuid4().hex}"
         _request_id_ctx.set(rid)
     return rid
+
+
+_client_id_ctx: ContextVar[str] = ContextVar("client_id", default="")
+
+
+def set_client_id(client_id: Optional[str] = None) -> str:
+    """Store the authenticated client ID in contextvar."""
+    cid = client_id or "anonymous"
+    _client_id_ctx.set(cid)
+    return cid
+
+
+def get_client_id() -> str:
+    """Retrieve the authenticated client ID from contextvar."""
+    return _client_id_ctx.get() or "anonymous"

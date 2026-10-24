@@ -98,6 +98,18 @@ class PayloadTooLargeError(AppException):
         )
 
 
+class AuthenticationError(AppException):
+    """Raised when client API key is missing, invalid, or revoked."""
+
+    def __init__(self, message: str = "Invalid or missing authentication credentials.") -> None:
+        super().__init__(
+            message=message,
+            status_code=401,
+            error_type="authentication_error",
+            error_code="invalid_api_key",
+        )
+
+
 def build_error_response(
     status_code: int,
     error_type: str,
@@ -115,10 +127,14 @@ def build_error_response(
             "request_id": rid,
         }
     }
+    headers = {"X-Request-ID": rid}
+    if status_code == 401:
+        headers["WWW-Authenticate"] = "Bearer"
+
     return JSONResponse(
         status_code=status_code,
         content=content,
-        headers={"X-Request-ID": rid},
+        headers=headers,
     )
 
 

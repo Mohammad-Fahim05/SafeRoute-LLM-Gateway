@@ -78,6 +78,17 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         return response
 
 
+from contextlib import asynccontextmanager
+from app.providers import shutdown_providers
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan resources."""
+    yield
+    await shutdown_providers()
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
     settings = get_settings()
@@ -89,6 +100,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # Register custom middleware

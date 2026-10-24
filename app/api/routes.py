@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.schemas import ChatCompletionRequest, ChatCompletionResponse
 from app.config import Settings, get_settings
+from app.core.auth import verify_api_key
 from app.core.errors import (
     AppException,
     InvalidModelError,
@@ -30,9 +31,9 @@ async def health_check(settings: Settings = Depends(get_settings)) -> Dict[str, 
 
 
 @router.get("/ready", status_code=status.HTTP_200_OK)
-async def readiness_check() -> JSONResponse:
+async def readiness_check(settings: Settings = Depends(get_settings)) -> JSONResponse:
     """Readiness probe verifying that backend dependencies/providers are accessible."""
-    providers = get_all_providers()
+    providers = get_all_providers(settings)
     provider_statuses = {}
     is_ready = True
 
@@ -66,6 +67,7 @@ async def readiness_check() -> JSONResponse:
 async def chat_completions(
     request: ChatCompletionRequest,
     settings: Settings = Depends(get_settings),
+    client_id: str = Depends(verify_api_key),
 ) -> ChatCompletionResponse:
     """Process OpenAI-compatible chat completion requests."""
     rid = get_request_id()
@@ -74,7 +76,7 @@ async def chat_completions(
     if request.model not in settings.allowed_models:
         logger.warning(
             f"Rejected request for unauthorized model: {request.model}",
-            extra={"extra_data": {"model": request.model}},
+            extra={"extra_data": {"model": request.model, "client_id": client_id}},
         )
         raise InvalidModelError(
             f"The model '{request.model}' is not permitted or supported. Allowed models: {', '.join(settings.allowed_models)}"
@@ -103,6 +105,7 @@ async def chat_completions(
         "Processing chat completion request",
         extra={
             "extra_data": {
+                "client_id": client_id,
                 "model": request.model,
                 "message_count": len(request.messages),
                 "temperature": request.temperature,
@@ -112,7 +115,7 @@ async def chat_completions(
     )
 
     # 3. Resolve provider
-    provider = get_provider_for_model(request.model)
+    provider = get_provider_for_model(request.model, settings)
 
     # 4. Invoke provider with controlled gateway timeout
     try:
