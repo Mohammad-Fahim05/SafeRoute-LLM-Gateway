@@ -1,0 +1,42 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+[36mvite v8.3.5 [32mbuilding client environment for production...[36m[39m
+transforming...
+Γ£ô 2586 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 1.14 kB Γöé gzip:   0.65 kB
+dist/assets/index-CAzReOaM.css                 38.98 kB Γöé gzip:   7.93 kB
+dist/assets/clock-Cy7VHQ1b.js                   0.19 kB Γöé gzip:   0.18 kB
+dist/assets/search-DwdjOHPf.js                  0.20 kB Γöé gzip:   0.18 kB
+dist/assets/info-B_5Yzo1T.js                    0.23 kB Γöé gzip:   0.19 kB
+dist/assets/chart-no-axes-column-ZJo9R3rV.js    0.25 kB Γöé gzip:   0.21 kB
+dist/assets/copy-BkH908V6.js                    0.36 kB Γöé gzip:   0.26 kB
+dist/assets/shield-alert-CKf7qe0v.js            0.38 kB Γöé gzip:   0.27 kB
+dist/assets/layers-Cj_PnmDd.js                  0.47 kB Γöé gzip:   0.27 kB
+dist/assets/sliders-vertical-CwGyz5qK.js        0.47 kB Γöé gzip:   0.26 kB
+dist/assets/cpu-CQJY9-Cp.js                     0.67 kB Γöé gzip:   0.30 kB
+dist/assets/JsonViewer-n9wfMC52.js              1.20 kB Γöé gzip:   0.68 kB
+dist/assets/StatusBadge-D-b2J240.js             1.90 kB Γöé gzip:   0.75 kB
+dist/assets/SectionCard-DzEbtSS8.js             2.34 kB Γöé gzip:   0.92 kB
+dist/assets/MetricCard-rvnBEeYk.js              2.49 kB Γöé gzip:   0.83 kB
+dist/assets/Cache-DyvzUp43.js                   6.75 kB Γöé gzip:   2.32 kB
+dist/assets/Config-ChO7DjSO.js                  6.83 kB Γöé gzip:   2.09 kB
+dist/assets/Security-BbH2SnSZ.js                6.85 kB Γöé gzip:   1.94 kB
+dist/assets/Reliability-B5vy6iY_.js             7.05 kB Γöé gzip:   2.39 kB
+dist/assets/Providers-CvO3ASJ8.js               8.12 kB Γöé gzip:   2.25 kB
+dist/assets/RequestDetailDrawer-YzLxko2Z.js     8.99 kB Γöé gzip:   2.43 kB
+dist/assets/Button-BtKlmQz7.js                  9.25 kB Γöé gzip:   3.52 kB
+dist/assets/Database-DpXUwupK.js                9.92 kB Γöé gzip:   3.29 kB
+dist/assets/Requests-JhpB_9Db.js               10.06 kB Γöé gzip:   3.14 kB
+dist/assets/Playground-CWRM_D1x.js             13.07 kB Γöé gzip:   4.22 kB
+dist/assets/Health-CaV4j9uq.js                 17.62 kB Γöé gzip:   5.32 kB
+dist/assets/Overview-CwI1_sD9.js               43.93 kB Γöé gzip:  13.51 kB
+dist/assets/Usage-Cn1vZqfS.js                  44.51 kB Γöé gzip:  13.63 kB
+dist/assets/index-Dyta4ZgE.js                 317.73 kB Γöé gzip: 100.02 kB
+dist/assets/CartesianChart-CJGH0POm.js        330.67 kB Γöé gzip:  96.86 kB
+
+[32mΓ£ô built in 1.23s[39m
+EXIT_CODE: 0

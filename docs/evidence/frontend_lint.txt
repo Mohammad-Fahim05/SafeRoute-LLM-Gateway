@@ -1,0 +1,46 @@
+
+> frontend@0.0.0 lint
+> oxlint
+
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+     ,-[src/context/AuthContext.tsx:161:14]
+ 160 |
+ 161 | export const useAuth = () => {
+     :              ^^^^^^^
+ 162 |   const context = useContext(AuthContext);
+     `----
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/components/ui/AuthModal.tsx:33:7]
+ 30 |
+ 31 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 32 |     if (isOpen) {
+ 33 |       setInputKey(apiKey);
+    :       ^^^^^|^^^^^
+    :            `-- Avoid calling setState() directly within an effect
+ 34 |       setStatusMsg(null);
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/pages/Playground.tsx:69:7]
+ 66 |
+ 67 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 68 |     if (providersData?.ollama?.pulled_models?.length && !providersData.ollama.pulled_models.includes(model)) {
+ 69 |       setModel(providersData.ollama.pulled_models[0]);
+    :       ^^^^|^^^
+    :           `-- Avoid calling setState() directly within an effect
+ 70 |     }
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+Found 3 warnings and 0 errors.
+Finished in 103ms on 32 files with 116 rules using 20 threads.
+EXIT_CODE: 0

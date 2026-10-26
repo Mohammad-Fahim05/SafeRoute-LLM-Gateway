@@ -1,0 +1,464 @@
+{
+  "dataset_id": "saferoute_core_evaluation_v1",
+  "version": "1.0.0",
+  "description": "Standard deterministic evaluation suite for SafeRoute LLM Gateway covering authentication, schema validation, allowlists, caching, rate limiting, guardrails, provider timeouts, provider errors, and Redis outages.",
+  "cases": [
+    {
+      "case_id": "eval_01_ordinary_success",
+      "category": "standard_completion",
+      "description": "Ordinary valid chat completion request using MockProvider returns HTTP 200 with choices and estimated usage.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "cache_enabled": false,
+        "rate_limit_enabled": false,
+        "guardrails_enabled": false
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "What is Python?"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 200,
+        "has_choices": true,
+        "usage_present": true,
+        "is_mock_estimate": true
+      }
+    },
+    {
+      "case_id": "eval_02_invalid_schema",
+      "category": "invalid_request_schema",
+      "description": "Request with empty messages list fails strict Pydantic validation with HTTP 422.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": []
+        }
+      },
+      "expected": {
+        "status_code": 422,
+        "error_type": "invalid_request_error"
+      }
+    },
+    {
+      "case_id": "eval_03_unauthorized_key",
+      "category": "unauthorized_api_key",
+      "description": "Request with missing or invalid Bearer key is rejected with HTTP 401.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "invalid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Hello"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 401,
+        "error_code": "invalid_api_key"
+      }
+    },
+    {
+      "case_id": "eval_04_revoked_key",
+      "category": "revoked_api_key",
+      "description": "Request with revoked client key is rejected with HTTP 401.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "revoked",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Hello"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 401,
+        "error_code": "invalid_api_key"
+      }
+    },
+    {
+      "case_id": "eval_05_unsupported_model",
+      "category": "unsupported_model",
+      "description": "Request with unauthorized model name is rejected by allowlist with HTTP 400.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "unapproved-gpt4",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Hello"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 400,
+        "error_code": "invalid_model"
+      }
+    },
+    {
+      "case_id": "eval_06_input_guardrail_block",
+      "category": "input_guardrail_rejection",
+      "description": "Request matching configured input regex rule is blocked before reaching provider with HTTP 400.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "guardrails_enabled": true,
+        "guardrails_rules": [
+          {
+            "rule_id": "block_drop_table",
+            "pattern": "DROP\\s+TABLE",
+            "match_type": "regex",
+            "stage": "input",
+            "case_sensitive": false
+          }
+        ]
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Execute DROP TABLE users;"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 400,
+        "error_code": "input_guardrail_blocked"
+      }
+    },
+    {
+      "case_id": "eval_07_output_guardrail_block",
+      "category": "output_guardrail_rejection",
+      "description": "Provider output containing prohibited string is blocked before client delivery with HTTP 502.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "guardrails_enabled": true,
+        "guardrails_rules": [
+          {
+            "rule_id": "block_mock_text",
+            "pattern": "deterministic response",
+            "match_type": "contains",
+            "stage": "output",
+            "case_sensitive": false
+          }
+        ]
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Safe user input prompt"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 502,
+        "error_code": "output_guardrail_blocked"
+      }
+    },
+    {
+      "case_id": "eval_08_provider_timeout",
+      "category": "provider_timeout",
+      "description": "Upstream provider exceeding gateway timeout returns HTTP 504.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "provider_timeout_seconds": 0.1
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-timeout",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Wait for timeout"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 504,
+        "error_code": "gateway_timeout"
+      }
+    },
+    {
+      "case_id": "eval_09_provider_error",
+      "category": "provider_error",
+      "description": "Upstream provider simulated outage returns HTTP 502.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-error",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Trigger provider error"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 502,
+        "error_code": "provider_error"
+      }
+    },
+    {
+      "case_id": "eval_10_cache_miss_and_hit",
+      "category": "cache_miss_and_hit",
+      "description": "Sequential identical requests demonstrate cache miss followed by cache hit with X-Cache: HIT.",
+      "scenario_type": "sequential_cache_hit",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "cache_enabled": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Explain deterministic exact caching."
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 200,
+        "cache_header": "HIT"
+      }
+    },
+    {
+      "case_id": "eval_11_rate_limit_rejection",
+      "category": "rate_limit_rejection",
+      "description": "Sending requests beyond allowed quota returns HTTP 429 Too Many Requests.",
+      "scenario_type": "rate_limit_burst",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "rate_limit_enabled": true,
+        "rate_limit_requests": 2,
+        "rate_limit_window_seconds": 60
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Testing client rate quota"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 429,
+        "error_code": "rate_limit_exceeded"
+      }
+    },
+    {
+      "case_id": "eval_12_redis_unavailable_fail_closed",
+      "category": "redis_unavailable_behavior",
+      "description": "When Redis rate limiter is unavailable under fail_closed policy, returns HTTP 503.",
+      "scenario_type": "redis_outage",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "rate_limit_enabled": true,
+        "rate_limit_failure_policy": "fail_closed",
+        "redis_simulate_outage": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Test Redis outage"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 503,
+        "error_code": "rate_limiter_unavailable"
+      }
+    },
+    {
+      "case_id": "eval_13_redis_unavailable_fail_open",
+      "category": "redis_unavailable_behavior",
+      "description": "When Redis cache is unavailable under fail_open policy, request falls back to provider with HTTP 200 and X-Cache: ERROR.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "cache_enabled": true,
+        "redis_simulate_outage": true
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "mock-model",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Test cache outage fail open"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 200,
+        "cache_header": "ERROR"
+      }
+    },
+    {
+      "case_id": "eval_14_unknown_model_pricing",
+      "category": "unknown_model_pricing",
+      "description": "Unlisted model completion results in null estimated cost in pricing catalog without crashing.",
+      "scenario_type": "single_request",
+      "requires_live": false,
+      "setup": {
+        "auth_enabled": true,
+        "allowed_models": [
+          "mock-model",
+          "phi3"
+        ]
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "phi3",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Pricing check"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 200,
+        "expect_cost_null": true
+      }
+    },
+    {
+      "case_id": "eval_15_live_ollama_optional",
+      "category": "live_provider_integration",
+      "description": "Live local Ollama completion (requires active Ollama daemon at localhost:11434).",
+      "scenario_type": "single_request",
+      "requires_live": true,
+      "setup": {
+        "auth_enabled": true,
+        "active_provider": "ollama",
+        "allowed_models": [
+          "llama3.2:1b"
+        ]
+      },
+      "request": {
+        "endpoint": "/v1/chat/completions",
+        "method": "POST",
+        "auth": "valid",
+        "body": {
+          "model": "llama3.2:1b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Hello live Ollama"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status_code": 200
+      }
+    }
+  ]
+}

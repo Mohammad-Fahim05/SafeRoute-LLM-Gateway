@@ -1,0 +1,17 @@
+# Prometheus Scraper Configuration for SafeRoute LLM Gateway
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'saferoute-gateway'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    # If METRICS_REQUIRE_AUTH=true, configure bearer_token:
+    # bearer_token: 'your-high-entropy-metrics-secret'
+    static_configs:
+      - targets: ['gateway:8000', 'localhost:8000']
+        labels:
+          environment: 'production'
+          service: 'llm-gateway'

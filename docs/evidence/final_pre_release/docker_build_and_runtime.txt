@@ -1,0 +1,77 @@
+================================================================================
+SafeRoute LLM Gateway - Docker Container Runtime Verification (Phase 4)
+================================================================================
+
+[1] Inspecting Built Docker Image:
+$ docker image inspect saferoute-gateway:test --format="Image ID: {{.Id}} | Size: {{.Size}} bytes | Architecture: {{.Architecture}}"
+Image ID: sha256:e0e28d6720814284f284651d1d3544e4f5f0a91cb5ef6ce691a98561554465d3 | Size: 88888587 bytes | Architecture: amd64
+[Exit code: 0]
+
+[2] Starting Isolated Container on port 8008:
+$ docker run -d --name saferoute-docker-audit -p 8008:8000 -e APP_ENV=production -e AUTH_ENABLED=true -e AUTH_SECRET="production_safe_test_secret_key_32chars!" -e ACTIVE_PROVIDER=mock -e CACHE_ENABLED=false -e METRICS_ENABLED=true -e METRICS_REQUIRE_AUTH=false saferoute-gateway:test
+410eb49f430189ee9bc6bcedf137a9ac6c9139a71100a7b1c8d8831cd71297e7
+[Exit code: 0]
+
+[3] Waiting for container to initialize...
+
+[4] Verifying Non-Root User Identity (docker exec id):
+$ docker exec saferoute-docker-audit id
+uid=10001(saferoute) gid=10001(saferoute) groups=10001(saferoute)
+[Exit code: 0]
+
+[5] Verifying Container Process (docker exec ps aux):
+$ docker exec saferoute-docker-audit ps aux || docker top saferoute-docker-audit
+OCI runtime exec failed: exec failed: unable to start container process: exec: "ps": executable file not found in $PATH: unknown
+UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
+10001               271304              271281              78                  09:16               ?                   00:00:02            /usr/local/bin/python3.11 /usr/local/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+[Exit code: 0]
+
+[6] Testing HTTP Endpoints on http://127.0.0.1:8008:
+
+--- Testing Health Liveness Probe: http://127.0.0.1:8008/health ---
+Status: 200 OK
+Response Preview (72 bytes):
+{"status":"ok","app":"SafeRoute LLM Gateway","environment":"production"}...
+
+--- Testing Readiness Probe: http://127.0.0.1:8008/ready ---
+Status: 200 OK
+Response Preview (124 bytes):
+{"status":"ready","database":"available","redis":"disabled","safety_classifier":"disabled","providers":{"mock":"available"}}...
+
+--- Testing Prometheus Metrics Endpoint: http://127.0.0.1:8008/metrics ---
+Status: 200 OK
+Response Preview (4631 bytes):
+# HELP saferoute_requests_total Total HTTP requests processed by the gateway
+# TYPE saferoute_requests_total counter
+saferoute_requests_total{provider="gateway",route="/health",status="200"} 1.0
+saferoute_requests_total{provider="gateway",route="/ready",status="200"} 1.0
+# HELP saferoute_requests_cr...
+
+[7] Inspecting Container Health Status:
+$ docker inspect --format="Status={{.State.Status}} | Health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}" saferoute-docker-audit
+Status=running | Health=starting
+[Exit code: 0]
+
+[8] Container Startup Logs:
+$ docker logs --tail 25 saferoute-docker-audit
+{"timestamp": "2026-10-26T09:16:29.623194+00:00", "level": "INFO", "logger": "saferoute", "message": "GET /health - 200 (3.63ms)", "request_id": "req_f83fc8d8c150439092d031c19ef0aaf6", "client_id": "anonymous", "http_method": "GET", "http_path": "/health", "status_code": 200, "duration_ms": 3.63, "client_ip": "172.17.0.1"}
+INFO:     172.17.0.1:60436 - "GET /health HTTP/1.1" 200 OK
+{"timestamp": "2026-10-26T09:16:29.650205+00:00", "level": "INFO", "logger": "saferoute", "message": "GET /ready - 200 (2.67ms)", "request_id": "req_ee7f979838b54ad38e52762f489575ee", "client_id": "anonymous", "http_method": "GET", "http_path": "/ready", "status_code": 200, "duration_ms": 2.67, "client_ip": "172.17.0.1"}
+INFO:     172.17.0.1:60440 - "GET /ready HTTP/1.1" 200 OK
+{"timestamp": "2026-10-26T09:16:29.660226+00:00", "level": "INFO", "logger": "saferoute", "message": "GET /metrics - 200 (1.81ms)", "request_id": "req_d5a459f241e9420aa804081ff705d0b3", "client_id": "anonymous", "http_method": "GET", "http_path": "/metrics", "status_code": 200, "duration_ms": 1.81, "client_ip": "172.17.0.1"}
+INFO:     172.17.0.1:60452 - "GET /metrics HTTP/1.1" 200 OK
+[STDERR] INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[Exit code: 0]
+
+[9] Stopping and Removing Audit Container:
+$ docker stop saferoute-docker-audit
+saferoute-docker-audit
+[Exit code: 0]
+$ docker rm saferoute-docker-audit
+saferoute-docker-audit
+[Exit code: 0]
+
+[OK] Docker Runtime Verification Complete.

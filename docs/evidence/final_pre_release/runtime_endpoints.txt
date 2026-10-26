@@ -1,0 +1,16 @@
+=== RUNTIME ENDPOINT SMOKE CHECKS ===
+Timestamp: 2026-10-26T08:58:54.532469+00:00
+
+/health (expected 200): Status 200
+Body: {"status":"ok","app":"SafeRoute LLM Gateway","environment":"development"}
+
+/ready (expected 200): Status 200
+Body: {"status":"ready","database":"available","redis":"available","safety_classifier":"disabled","providers":{"mock":"available","ollama":"available"}}
+
+/metrics (expected 200): Status 200
+Sample: # HELP saferoute_requests_total Total HTTP requests processed by the gateway
+# TYPE saferoute_requests_total counter
+saferoute_requests_total{provider...
+
+/api/management/config unauthenticated (expected 401): Status 401
+Body: {"error":{"type":"authentication_error","code":"invalid_api_key","message":"Missing Authorization header.","request_id":"req_54676b3957fb425e92719ac9271ac9f0"}}

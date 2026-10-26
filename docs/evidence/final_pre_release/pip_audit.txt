@@ -1,0 +1,10 @@
+=== Python Dependency Vulnerability Audit (pip-audit) ===
+Timestamp: 2026-10-26T08:58:53.744371+00:00
+Command: ['D:\\SafeRoute LLM Gateway\\.venv\\Scripts\\python.exe', '-m', 'pip_audit', '--local']
+Exit Code: 0
+Duration: 3.44s
+
+--- STDOUT ---
+
+--- STDERR ---
+No known vulnerabilities found

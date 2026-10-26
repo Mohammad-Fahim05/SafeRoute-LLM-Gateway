@@ -128,8 +128,9 @@ def test_token_limit_exceeding_system_max_rejected(client: TestClient):
     assert "exceeds" in data["error"]["message"].lower()
 
 
-def test_streaming_requests_rejected(client: TestClient):
-    """Requirement 9: stream=True is rejected with 400 unsupported_parameter."""
+def test_streaming_requests_rejected_when_disabled(client: TestClient, test_settings):
+    """Requirement 9: stream=True is rejected with 400 unsupported_parameter when disabled."""
+    test_settings.streaming_enabled = False
     payload = {
         "model": "mock-model",
         "messages": [{"role": "user", "content": "Hello"}],

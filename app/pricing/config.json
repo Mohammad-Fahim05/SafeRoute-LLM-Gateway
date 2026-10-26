@@ -1,0 +1,240 @@
+{
+  "pricing_version": "2026-10-v3",
+  "currency": "USD",
+  "models": {
+    "llama3.2:1b": {
+      "provider": "ollama",
+      "is_local": true,
+      "status": "active",
+      "input_cost_per_1m": "0.0",
+      "output_cost_per_1m": "0.0",
+      "notes": "Local inference has no external API charge."
+    },
+    "qwen2.5-coder:7b-instruct-q4_K_M": {
+      "provider": "ollama",
+      "is_local": true,
+      "status": "active",
+      "input_cost_per_1m": "0.0",
+      "output_cost_per_1m": "0.0",
+      "notes": "Local inference has no external API charge."
+    },
+    "llama3.2": {
+      "provider": "ollama",
+      "is_local": true,
+      "status": "active",
+      "input_cost_per_1m": "0.0",
+      "output_cost_per_1m": "0.0",
+      "notes": "Local inference has no external API charge."
+    },
+    "phi3": {
+      "provider": "ollama",
+      "is_local": true,
+      "status": "active",
+      "input_cost_per_1m": "0.0",
+      "output_cost_per_1m": "0.0",
+      "notes": "Local inference has no external API charge."
+    },
+    "mistral": {
+      "provider": "ollama",
+      "is_local": true,
+      "status": "active",
+      "input_cost_per_1m": "0.0",
+      "output_cost_per_1m": "0.0",
+      "notes": "Local inference has no external API charge."
+    },
+    "gpt-4o-mini": {
+      "provider": "openai",
+      "is_local": false,
+      "status": "reference_unsupported",
+      "input_cost_per_1m": "0.15",
+      "output_cost_per_1m": "0.60",
+      "source_url": "https://openai.com/api/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Standard OpenAI cloud reference pricing per 1M tokens. Reference entry only; SafeRoute does not currently implement an OpenAI provider adapter."
+    },
+    "claude-sonnet-4-6": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "active",
+      "input_cost_per_1m": "3.00",
+      "output_cost_per_1m": "15.00",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Anthropic Claude Sonnet 4.6 active recommended model rates per 1M tokens."
+    },
+    "claude-haiku-4-5-20251001": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "active",
+      "input_cost_per_1m": "1.00",
+      "output_cost_per_1m": "5.00",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Anthropic Claude Haiku 4.5 active recommended model rates per 1M tokens."
+    },
+    "gemini-3.8-flash": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "active",
+      "input_cost_per_1m": "0.75",
+      "output_cost_per_1m": "3.75",
+      "source_url": "https://ai.google.dev/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Google Gemini 3.8 Flash active intelligent model introductory rate ($0.75 in / $3.75 out per 1M tokens through Dec 31, 2026)."
+    },
+    "gemini-3.5-flash-lite": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "active",
+      "input_cost_per_1m": "0.30",
+      "output_cost_per_1m": "2.50",
+      "source_url": "https://ai.google.dev/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Google Gemini 3.5 Flash-Lite active high-throughput model rates per 1M tokens."
+    },
+    "claude-3-7-sonnet-20250219": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2026-02-19",
+      "deprecated_date": "2025-10-28",
+      "superseded_by": "claude-sonnet-4-6",
+      "input_cost_per_1m": "3.00",
+      "output_cost_per_1m": "15.00",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Claude 3.7 Sonnet (retired Feb 19, 2026 on native API; retained for legacy records)."
+    },
+    "claude-3-5-haiku-20241022": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2026-02-19",
+      "deprecated_date": "2025-12-19",
+      "superseded_by": "claude-haiku-4-5-20251001",
+      "input_cost_per_1m": "0.80",
+      "output_cost_per_1m": "4.00",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Claude 3.5 Haiku (retired Feb 19, 2026 on native API; retained for legacy records)."
+    },
+    "claude-3-5-sonnet-20241022": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2025-10-28",
+      "input_cost_per_1m": "3.00",
+      "output_cost_per_1m": "15.00",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Claude 3.5 Sonnet (retired Oct 28, 2025 on native API; retained for legacy records)."
+    },
+    "claude-3-haiku-20240307": {
+      "provider": "claude",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2026-04-20",
+      "input_cost_per_1m": "0.25",
+      "output_cost_per_1m": "1.25",
+      "source_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Claude 3 Haiku (retired Apr 20, 2026 on native API; retained for legacy records)."
+    },
+    "gemini-2.5-flash": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "restricted_legacy",
+      "input_cost_per_1m": "0.30",
+      "output_cost_per_1m": "2.50",
+      "source_url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Legacy reference: Gemini 2.5 Flash access restricted to active historical accounts; not recommended for new projects."
+    },
+    "gemini-2.5-pro": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "restricted_legacy",
+      "input_cost_per_1m": "1.25",
+      "output_cost_per_1m": "10.00",
+      "source_url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "verification_date": "2026-10-25",
+      "notes": "Legacy reference: Gemini 2.5 Pro access restricted to active historical accounts; not recommended for new projects."
+    },
+    "gemini-1.5-flash": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2025-06-01",
+      "input_cost_per_1m": "0.075",
+      "output_cost_per_1m": "0.30",
+      "source_url": "https://ai.google.dev/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Gemini 1.5 Flash (discontinued mid-2025; retained for legacy records)."
+    },
+    "gemini-1.5-pro": {
+      "provider": "gemini",
+      "is_local": false,
+      "status": "retired",
+      "retirement_date": "2025-06-01",
+      "input_cost_per_1m": "1.25",
+      "output_cost_per_1m": "5.00",
+      "source_url": "https://ai.google.dev/pricing",
+      "verification_date": "2026-10-25",
+      "notes": "Historical reference: Gemini 1.5 Pro (discontinued mid-2025; retained for legacy records)."
+    },
+    "mock-model": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider estimates are explicitly excluded from cloud spending."
+    },
+    "mock-timeout": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider timeout simulation."
+    },
+    "mock-error": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider 500 internal error simulation."
+    },
+    "mock-malformed": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider malformed payload simulation."
+    },
+    "mock-rate-limit": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider 429 rate limit exceeded simulation."
+    },
+    "mock-auth-error": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider 401 unauthorized simulation."
+    },
+    "mock-server-error": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "active",
+      "notes": "Mock provider 503 service unavailable simulation."
+    },
+    "mock-no-streaming": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "test",
+      "notes": "Mock non-streaming capability test double."
+    },
+    "mock-no-tools": {
+      "provider": "mock",
+      "is_mock": true,
+      "status": "test",
+      "notes": "Mock non-tool capability test double."
+    }
+  }
+}

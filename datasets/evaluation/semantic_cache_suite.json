@@ -1,0 +1,207 @@
+{
+  "suite_id": "saferoute_semantic_cache_benchmark_v2",
+  "version": "2.0.0",
+  "description": "Comprehensive deterministic benchmark dataset for evaluating semantic cache quality, multi-dimensional compatibility, adversarial invariants, cross-tenant isolation, bypass compliance, and retrieval latency.",
+  "pairs": [
+    {
+      "id": "pair_01_exact_duplicate",
+      "category": "exact_duplicate",
+      "description": "Verbatim identical prompts must hit exact cache first.",
+      "seed_prompt": "What is the primary function of mitochondria in human cells?",
+      "probe_prompt": "What is the primary function of mitochondria in human cells?",
+      "expected_outcome": "exact_hit",
+      "should_reuse": true
+    },
+    {
+      "id": "pair_02_semantic_paraphrase",
+      "category": "semantic_equivalent",
+      "description": "High semantic similarity with lexical paraphrase; should hit semantic cache.",
+      "seed_prompt": "How does gradient descent optimize neural network parameters?",
+      "probe_prompt": "How does gradient descent optimize neural network weights?",
+      "expected_outcome": "semantic_hit",
+      "should_reuse": true
+    },
+    {
+      "id": "pair_03_semantic_word_order",
+      "category": "semantic_equivalent",
+      "description": "Syntactic reorganization conveying identical intent.",
+      "seed_prompt": "Explain the difference between supervised and unsupervised learning.",
+      "probe_prompt": "Explain how supervised learning differs from unsupervised learning.",
+      "expected_outcome": "semantic_hit",
+      "should_reuse": true
+    },
+    {
+      "id": "pair_04_adversarial_negation",
+      "category": "adversarial_conflict",
+      "description": "Inverted polarity (positive vs negation). Reusing would yield an erroneous answer.",
+      "seed_prompt": "Why is Python well suited for rapid software prototyping?",
+      "probe_prompt": "Why is Python not suited for rapid software prototyping?",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_05_adversarial_numeric_entity",
+      "category": "adversarial_conflict",
+      "description": "Identical phrasing except for a critical numeric entity.",
+      "seed_prompt": "Calculate the surface area of a cube with side length 5 meters.",
+      "probe_prompt": "Calculate the surface area of a cube with side length 9 meters.",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_06_adversarial_instruction_change",
+      "category": "adversarial_conflict",
+      "description": "Identical query topic but mutually exclusive output instruction.",
+      "seed_prompt": "Draft a formal resignation letter thanking the team.",
+      "probe_prompt": "Draft an informal resignation letter criticizing the team.",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_07_dissimilar_unrelated",
+      "category": "dissimilar",
+      "description": "Completely unrelated domains; cosine similarity must be far below threshold.",
+      "seed_prompt": "What are the core principles of quantum cryptography?",
+      "probe_prompt": "What are the recommended ingredients for classic French onion soup?",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_08_bypassed_credential",
+      "category": "bypass_compliance",
+      "description": "Prompt containing authorization tokens must bypass semantic caching.",
+      "seed_prompt": "Connect with Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890",
+      "probe_prompt": "Please connect with Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890",
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_09_bypassed_temporal",
+      "category": "bypass_compliance",
+      "description": "Time-sensitive query must bypass semantic cache to avoid stale information.",
+      "seed_prompt": "What is the current time and date in New York right now?",
+      "probe_prompt": "Please tell me the current time and date in New York right now?",
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_10_dissimilar_subtle_domain",
+      "category": "dissimilar",
+      "description": "Both in tech domain but addressing distinct subtopics.",
+      "seed_prompt": "Explain the Raft consensus algorithm leader election phase.",
+      "probe_prompt": "Explain the TCP three-way handshake connection establishment.",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_11_cross_tenant_isolation",
+      "category": "tenant_isolation",
+      "description": "Identical prompt submitted by a different tenant must result in a clean cache miss.",
+      "seed_prompt": "Describe the architecture of the Transformer attention mechanism.",
+      "probe_prompt": "Describe the architecture of the Transformer attention mechanism.",
+      "seed_client": "alice",
+      "probe_client": "bob",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_12_temperature_determinism_mismatch",
+      "category": "generation_compatibility",
+      "description": "Deterministic request (temp: 0.0) must not reuse candidate generated at stochastic temp: 0.15.",
+      "seed_prompt": "Write a Python regular expression to match ISO 8601 timestamps.",
+      "probe_prompt": "Write a Python regular expression to match ISO 8601 timestamps.",
+      "seed_params": { "temperature": 0.15 },
+      "probe_params": { "temperature": 0.0 },
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_13_conflicting_system_instructions",
+      "category": "system_compatibility",
+      "description": "Identical user prompt with conflicting system prompts must not share a cached response.",
+      "seed_prompt": "Summarize the primary benefits of renewable solar energy.",
+      "probe_prompt": "Summarize the primary benefits of renewable solar energy.",
+      "seed_system": "You are an assistant who responds only in Spanish.",
+      "probe_system": "You are an assistant who responds only in German.",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_14_truncated_response_incompatible",
+      "category": "generation_compatibility",
+      "description": "Candidate truncated by low max_tokens limit cannot be reused for unconstrained requests.",
+      "seed_prompt": "Explain the step-by-step history of the Roman Republic.",
+      "probe_prompt": "Explain the step-by-step history of the Roman Republic.",
+      "seed_params": { "max_completion_tokens": 15 },
+      "probe_params": { "max_completion_tokens": 500 },
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_15_streaming_request_bypass",
+      "category": "bypass_compliance",
+      "description": "Streaming completion request must bypass semantic cache.",
+      "seed_prompt": "List the fundamental forces of physics in order of strength.",
+      "probe_prompt": "List the fundamental forces of physics in order of strength.",
+      "probe_params": { "stream": true },
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_16_tool_calling_bypass",
+      "category": "bypass_compliance",
+      "description": "Tool-enabled chat request must bypass semantic cache.",
+      "seed_prompt": "Check the current status of deployment pipeline cluster A.",
+      "probe_prompt": "Check the current status of deployment pipeline cluster A.",
+      "probe_params": {
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "check_cluster_status",
+              "description": "Check cluster deployment status"
+            }
+          }
+        ]
+      },
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_17_bypassed_aws_key",
+      "category": "bypass_compliance",
+      "description": "Prompt containing cloud provider access keys must bypass semantic cache.",
+      "seed_prompt": "Initialize connection using AKIAIOSFODNN7EXAMPLE access key",
+      "probe_prompt": "Please initialize connection using AKIAIOSFODNN7EXAMPLE access key",
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_18_bypassed_personalized_account",
+      "category": "bypass_compliance",
+      "description": "Personalized user account queries must bypass semantic cache to prevent data exposure.",
+      "seed_prompt": "What is my account balance and recent transactions?",
+      "probe_prompt": "Show me my account balance and recent transactions please",
+      "expected_outcome": "bypass",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_19_changed_location_entity",
+      "category": "adversarial_conflict",
+      "description": "Identical query structure but contrasting geographic entities.",
+      "seed_prompt": "What is the historical founding year and capital city of France?",
+      "probe_prompt": "What is the historical founding year and capital city of Germany?",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    },
+    {
+      "id": "pair_20_length_disparity_prefix_saturation",
+      "category": "adversarial_conflict",
+      "description": "A concise query must not match a detailed essay sharing the initial prefix sentence.",
+      "seed_prompt": "How does Kubernetes schedule pods across worker nodes?",
+      "probe_prompt": "How does Kubernetes schedule pods across worker nodes? Provide an exhaustive architectural comparison of kube-scheduler scoring plugins versus custom controllers, including affinity, anti-affinity, tolerations, and resource limits.",
+      "expected_outcome": "miss",
+      "should_reuse": false
+    }
+  ]
+}

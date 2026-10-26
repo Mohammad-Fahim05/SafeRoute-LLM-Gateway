@@ -112,3 +112,122 @@ def test_authenticate_client_missing_auth_secret_fails_closed():
     settings = Settings(auth_secret="")
     with pytest.raises(AuthenticationError, match="misconfigured"):
         authenticate_client("gw_test_any_key", settings)
+
+
+def test_extract_bearer_token_tolerates_raw_gateway_key():
+    """Verify raw keys starting with gw_test_ prefix are accepted without Bearer keyword."""
+    key = "gw_test_abcdef1234567890"
+    assert extract_bearer_token(key) == key
+    assert extract_bearer_token(f"  {key}  ") == key
+
+
+@pytest.mark.anyio
+async def test_verify_api_key_bearer_dependency():
+    """Verify verify_api_key dependency authenticates valid Bearer credentials."""
+    from unittest.mock import MagicMock
+    from fastapi.security import HTTPAuthorizationCredentials
+    from app.core.auth import verify_api_key
+
+    secret = "a_very_secure_test_secret_12345"
+    key = "gw_test_bearer_valid"
+    verifier = compute_key_verifier(key, secret)
+    settings = Settings(
+        auth_secret=secret,
+        auth_enabled=True,
+        client_keys=[{"client_id": "client_bearer", "verifier": verifier, "enabled": True}],
+    )
+
+    request = MagicMock()
+    request.headers.get.return_value = None
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=key)
+
+    client_id = await verify_api_key(request=request, credentials=creds, settings=settings)
+    assert client_id == "client_bearer"
+
+
+@pytest.mark.anyio
+async def test_verify_api_key_raw_header_dependency():
+    """Verify verify_api_key dependency extracts raw key from request headers."""
+    from unittest.mock import MagicMock
+    from app.core.auth import verify_api_key
+
+    secret = "a_very_secure_test_secret_12345"
+    key = "gw_test_raw_valid"
+    verifier = compute_key_verifier(key, secret)
+    settings = Settings(
+        auth_secret=secret,
+        auth_enabled=True,
+        client_keys=[{"client_id": "client_raw", "verifier": verifier, "enabled": True}],
+    )
+
+    request = MagicMock()
+    request.headers.get.return_value = key
+
+    client_id = await verify_api_key(request=request, credentials=None, settings=settings)
+    assert client_id == "client_raw"
+
+
+@pytest.mark.anyio
+async def test_verify_api_key_disabled_client_rejected():
+    """Verify verify_api_key rejects disabled client with 401 AuthenticationError."""
+    from unittest.mock import MagicMock
+    from fastapi.security import HTTPAuthorizationCredentials
+    from app.core.auth import verify_api_key
+
+    secret = "a_very_secure_test_secret_12345"
+    key = "gw_test_disabled"
+    verifier = compute_key_verifier(key, secret)
+    settings = Settings(
+        auth_secret=secret,
+        auth_enabled=True,
+        client_keys=[{"client_id": "client_disabled", "verifier": verifier, "enabled": False}],
+    )
+
+    request = MagicMock()
+    request.headers.get.return_value = None
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=key)
+
+    with pytest.raises(AuthenticationError, match="disabled or revoked"):
+        await verify_api_key(request=request, credentials=creds, settings=settings)
+
+
+@pytest.mark.anyio
+async def test_verify_api_key_mismatched_key_rejected():
+    """Verify verify_api_key rejects invalid key."""
+    from unittest.mock import MagicMock
+    from fastapi.security import HTTPAuthorizationCredentials
+    from app.core.auth import verify_api_key
+
+    secret = "a_very_secure_test_secret_12345"
+    settings = Settings(
+        auth_secret=secret,
+        auth_enabled=True,
+        client_keys=[{"client_id": "client_ok", "verifier": "correct_verifier", "enabled": True}],
+    )
+
+    request = MagicMock()
+    request.headers.get.return_value = None
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="gw_test_wrong")
+
+    with pytest.raises(AuthenticationError, match="Invalid client API key"):
+        await verify_api_key(request=request, credentials=creds, settings=settings)
+
+
+def test_openapi_security_scheme_configuration():
+    """Verify OpenAPI generates HTTPBearer security scheme for Swagger UI."""
+    from app.main import create_app
+
+    app = create_app()
+    schema = app.openapi()
+
+    assert "components" in schema
+    assert "securitySchemes" in schema["components"]
+    assert "HTTPBearer" in schema["components"]["securitySchemes"]
+    assert schema["components"]["securitySchemes"]["HTTPBearer"]["type"] == "http"
+    assert schema["components"]["securitySchemes"]["HTTPBearer"]["scheme"] == "bearer"
+
+    post_op = schema["paths"]["/v1/chat/completions"]["post"]
+    assert post_op.get("security") == [{"HTTPBearer": []}]
+    param_names = [p.get("name") for p in post_op.get("parameters", [])]
+    assert "authorization" not in param_names
+    assert "settings" not in param_names

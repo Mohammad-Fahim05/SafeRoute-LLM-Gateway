@@ -1,0 +1,93 @@
+services:
+  # ----------------------------------------------------------------------------
+  # SafeRoute LLM Gateway Service
+  # ----------------------------------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: saferoute-gateway:latest
+    restart: unless-stopped
+    ports:
+      # Configurable host port (defaults to 8000, can be set to e.g. 8001 if local server is running)
+      - "${GATEWAY_PORT:-8000}:8000"
+    environment:
+      # Application Environment
+      - APP_ENV=${APP_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Authentication (Passed from environment/.env, never hardcoded)
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - CLIENT_KEYS=${CLIENT_KEYS}
+
+      # Provider Configuration (Defaults to host-reachable Ollama)
+      - ACTIVE_PROVIDER=${ACTIVE_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-llama3.2:1b}
+      - PROVIDER_TIMEOUT_SECONDS=${PROVIDER_TIMEOUT_SECONDS:-30.0}
+
+      # Database Configuration (Persistent container storage)
+      - DATABASE_URL=sqlite:////app/data/saferoute.db
+      - DATABASE_STRICT_MODE=${DATABASE_STRICT_MODE:-false}
+
+      # Redis & Response Caching
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_ENABLED=${CACHE_ENABLED:-true}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-3600}
+      - CACHE_NAMESPACE=${CACHE_NAMESPACE:-v1}
+      - CACHE_FAILURE_POLICY=${CACHE_FAILURE_POLICY:-fail_open}
+
+      # Semantic Caching & Rate Limiting
+      - SEMANTIC_CACHE_ENABLED=${SEMANTIC_CACHE_ENABLED:-false}
+      - SEMANTIC_CACHE_THRESHOLD=${SEMANTIC_CACHE_THRESHOLD:-0.85}
+      - SEMANTIC_CACHE_EMBEDDING_PROVIDER=${SEMANTIC_CACHE_EMBEDDING_PROVIDER:-local}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-false}
+
+      # Streaming & Streaming Cache Replay (Phase 9.2 & Phase 11C)
+      - STREAMING_ENABLED=${STREAMING_ENABLED:-true}
+      - STREAMING_CACHE_REPLAY_ENABLED=${STREAMING_CACHE_REPLAY_ENABLED:-true}
+
+      # Prometheus Metrics & Observability (Phase 11B)
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - METRICS_REQUIRE_AUTH=${METRICS_REQUIRE_AUTH:-false}
+    volumes:
+      # Persistent named volume for SQLite database & WAL files
+      - saferoute-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      # Enables the Linux container to resolve the Windows/Mac host machine
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # Redis Cache & Rate Limiting Service
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      # Optional host access to Redis (defaults to 6379)
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - saferoute-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
+volumes:
+  saferoute-data:
+    name: saferoute-sqlite-data
+  saferoute-redis-data:
+    name: saferoute-redis-data

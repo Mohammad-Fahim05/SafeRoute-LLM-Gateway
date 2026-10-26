@@ -1,0 +1,22 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 243,
+  "EndLine": 244,
+  "StartColumn": 12,
+  "EndColumn": 54,
+  "Match": "API Key:\n  REDACTED",
+  "Secret": "REDACTED",
+  "File": "README.md",
+  "SymlinkFile": "",
+  "Commit": "d0721a838d01ed48f24b238243621418a60d0f79",
+  "Entropy": 4.7973433,
+  "Author": "Mohammad Fahim",
+  "Email": "fahimfiroz2005@gmail.com",
+  "Date": "2026-10-24T18:34:57Z",
+  "Message": "Phase 2: Client API-key authentication and Ollama provider adapter",
+  "Tags": [],
+  "Fingerprint": "d0721a838d01ed48f24b238243621418a60d0f79:README.md:generic-api-key:243"
+ }
+]

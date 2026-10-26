@@ -32,7 +32,11 @@ ENV/
 
 # Environment files
 .env
+.env.*
 !.env.example
+!.env.*.example
+.dev_api_key*
+*.key
 
 # IDEs and Editors
 .vscode/
@@ -47,3 +51,16 @@ htmlcov/
 
 # Logs
 *.log
+
+# Database files & data directory
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.sqlite
+data/*.csv
+data/evaluation_results/
+data/
+benchmark_load_results*.json
+benchmark_load_report*.md
+scratch/

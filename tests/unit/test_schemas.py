@@ -51,14 +51,14 @@ def test_valid_chat_completion_request():
     assert req.stream is False
 
 
-def test_request_rejects_streaming():
-    """Ensure stream=True is rejected."""
-    with pytest.raises(ValidationError):
-        ChatCompletionRequest(
-            model="mock-model",
-            messages=[ChatMessage(role="user", content="Hello")],
-            stream=True,
-        )
+def test_request_supports_streaming():
+    """Ensure stream=True is accepted in request schema."""
+    req = ChatCompletionRequest(
+        model="mock-model",
+        messages=[ChatMessage(role="user", content="Hello")],
+        stream=True,
+    )
+    assert req.stream is True
 
 
 def test_request_forbids_extra_fields():

@@ -1,0 +1,26 @@
+=== Independent Security Tests (tests/test_security.py) ===
+Timestamp: 2026-10-26T08:57:35.964333+00:00
+Command: ['D:\\SafeRoute LLM Gateway\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'tests/test_security.py', '-v']
+Exit Code: 0
+Duration: 3.53s
+
+--- STDOUT ---
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.3.4, pluggy-1.5.0 -- D:\SafeRoute LLM Gateway\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\SafeRoute LLM Gateway
+configfile: pyproject.toml
+plugins: cov-7.1.0, langsmith-0.12.1, anyio-4.14.2
+collecting ... collected 9 items
+
+tests/test_security.py::test_missing_authorization_returns_401 PASSED    [ 11%]
+tests/test_security.py::test_invalid_credentials_returns_401 PASSED      [ 22%]
+tests/test_security.py::test_revoked_credentials_rejected_with_401 PASSED [ 33%]
+tests/test_security.py::test_non_admin_access_to_administrative_endpoints_returns_403 PASSED [ 44%]
+tests/test_security.py::test_cross_tenant_request_isolation PASSED       [ 55%]
+tests/test_security.py::test_cross_tenant_cache_isolation PASSED         [ 66%]
+tests/test_security.py::test_oversized_payload_rejection_returns_413 PASSED [ 77%]
+tests/test_security.py::test_unauthorized_config_and_database_access PASSED [ 88%]
+tests/test_security.py::test_error_responses_never_disclose_secrets PASSED [100%]
+
+============================== 9 passed in 0.59s ==============================

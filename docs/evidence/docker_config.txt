@@ -1,0 +1,98 @@
+name: saferoutellmgateway
+services:
+  gateway:
+    build:
+      context: D:\SafeRoute LLM Gateway
+      dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      ACTIVE_PROVIDER: ollama
+      APP_ENV: production
+      AUTH_ENABLED: "true"
+      AUTH_SECRET: OrF8jA/q7FeDYDZsT5xW2yHQ2mozduyUKDKDGt7rcig=
+      CACHE_ENABLED: "true"
+      CACHE_FAILURE_POLICY: fail_open
+      CACHE_NAMESPACE: v1
+      CACHE_TTL_SECONDS: "3600"
+      CLIENT_KEYS: '[{"client_id": "local_dev", "verifier": "a9bf3cd457f18349f033b5258dac5372a85447c4b1fd155c21bfeb487e3269e2", "enabled": true, "role": "admin", "is_admin": true}]'
+      DATABASE_STRICT_MODE: "false"
+      DATABASE_URL: sqlite:////app/data/saferoute.db
+      DEFAULT_MODEL: llama3.2:1b
+      LOG_LEVEL: INFO
+      METRICS_ENABLED: "true"
+      METRICS_REQUIRE_AUTH: "false"
+      OLLAMA_BASE_URL: http://localhost:11434
+      PROVIDER_TIMEOUT_SECONDS: "30.0"
+      RATE_LIMIT_ENABLED: "false"
+      REDIS_URL: redis://redis:6379/0
+      SEMANTIC_CACHE_EMBEDDING_PROVIDER: local
+      SEMANTIC_CACHE_ENABLED: "false"
+      SEMANTIC_CACHE_THRESHOLD: "0.85"
+      STREAMING_CACHE_REPLAY_ENABLED: "true"
+      STREAMING_ENABLED: "true"
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8000/health
+      timeout: 5s
+      interval: 15s
+      retries: 3
+      start_period: 10s
+    image: saferoute-gateway:latest
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: saferoute-data
+        target: /app/data
+        volume: {}
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 3s
+      interval: 5s
+      retries: 5
+      start_period: 2s
+    image: redis:7-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: saferoute-redis-data
+        target: /data
+        volume: {}
+networks:
+  default:
+    name: saferoutellmgateway_default
+volumes:
+  saferoute-data:
+    name: saferoute-sqlite-data
+  saferoute-redis-data:
+    name: saferoute-redis-data
+EXIT_CODE: 0

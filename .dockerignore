@@ -1,0 +1,46 @@
+# Git metadata
+.git
+.gitignore
+
+# Environment & credentials (CRITICAL: never bake secrets into image)
+.env
+.env.*
+!.env.example
+.dev_api_key.txt
+*.key
+*.pem
+
+# Local SQLite databases & logs
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Development artifacts & scratchpads
+scratch/
+brain/
+.gemini/
+
+# IDE files
+.vscode/
+.idea/

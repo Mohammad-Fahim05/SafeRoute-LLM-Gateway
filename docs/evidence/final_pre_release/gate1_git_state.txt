@@ -1,0 +1,240 @@
+=== GATE 1: GIT AND REPOSITORY STATE ===
+Date: 2026-10-26T14:26:26.8276368+05:30
+
+>>> git status --short --branch (git status --short --branch)
+## master
+ M .env.example
+ M .gitignore
+ M README.md
+ M app/api/routes.py
+ M app/api/schemas.py
+ M app/config.py
+ M app/core/auth.py
+ M app/core/errors.py
+ M app/main.py
+ M app/providers/__init__.py
+ M app/providers/base.py
+ M app/providers/mock.py
+ M app/providers/ollama.py
+ M pyproject.toml
+ M scripts/manage_keys.py
+ M tests/conftest.py
+ M tests/integration/test_errors.py
+ M tests/integration/test_ollama_integration.py
+ M tests/unit/test_auth.py
+ M tests/unit/test_config.py
+ M tests/unit/test_ollama_provider.py
+ M tests/unit/test_schemas.py
+?? .dockerignore
+?? .env.docker.example
+?? .github/
+?? Dockerfile
+?? LICENSE
+?? app/api/management.py
+?? app/cache/
+?? app/db/
+?? app/evaluation/
+?? app/guardrails/
+?? app/limiter/
+?? app/metrics.py
+?? app/pricing/
+?? app/providers/capabilities.py
+?? app/providers/failover.py
+?? datasets/
+?? docker-compose.yml
+?? docs/
+?? frontend/
+?? scripts/benchmark_cache_audit.py
+?? scripts/benchmark_hardening_verified.py
+?? scripts/benchmark_load.py
+?? scripts/benchmark_safety_classifier.py
+?? scripts/benchmark_semantic_cache.py
+?? scripts/export_usage.py
+?? scripts/run_evaluation.py
+?? tests/integration/test_benchmark_script.py
+?? tests/integration/test_caching.py
+?? tests/integration/test_evaluation.py
+?? tests/integration/test_failover_integration.py
+?? tests/integration/test_guardrails.py
+?? tests/integration/test_live_infrastructure_opt_in.py
+?? tests/integration/test_metrics_integration.py
+?? tests/integration/test_production_readiness.py
+?? tests/integration/test_rate_limiting.py
+?? tests/integration/test_reliability_audit.py
+?? tests/integration/test_safety_classification_integration.py
+?? tests/integration/test_streaming_cache.py
+?? tests/integration/test_streaming_integration.py
+?? tests/integration/test_tools_integration.py
+?? tests/integration/test_usage_and_costs.py
+?? tests/test_security.py
+?? tests/unit/test_cache.py
+?? tests/unit/test_capability_audit.py
+?? tests/unit/test_catalog_consistency.py
+?? tests/unit/test_database.py
+?? tests/unit/test_evaluation.py
+?? tests/unit/test_failover.py
+?? tests/unit/test_guardrails.py
+?? tests/unit/test_management_api.py
+?? tests/unit/test_metrics.py
+?? tests/unit/test_model_catalog_audit.py
+?? tests/unit/test_pricing.py
+?? tests/unit/test_provider_routing_precedence.py
+?? tests/unit/test_rate_limiter.py
+?? tests/unit/test_safety_classification.py
+?? tests/unit/test_semantic_cache.py
+?? tests/unit/test_semantic_cache_safety_audit.py
+?? tests/unit/test_streaming.py
+?? tests/unit/test_streaming_cache.py
+?? tests/unit/test_tools.py
+EXIT_CODE: 0
+
+>>> git branch --show-current (git branch --show-current)
+master
+EXIT_CODE: 0
+
+>>> git log -5 --oneline (git log -5 --oneline)
+d0721a8 Phase 2: Client API-key authentication and Ollama provider adapter
+2f8279a Phase 1: Foundation with MockProvider, request IDs, schemas, and tests
+EXIT_CODE: 0
+
+>>> git tag --list "v1.0.0" (git tag --list "v1.0.0")
+EXIT_CODE: 0
+
+>>> git diff --check (git diff --check)
+EXIT_CODE: 0
+
+>>> git diff --stat (git diff --stat)
+ .env.example                                 |  216 ++-
+ .gitignore                                   |   17 +
+ README.md                                    | 2678 +++++++++++++++++++++++---
+ app/api/routes.py                            | 1961 ++++++++++++++++++-
+ app/api/schemas.py                           |  267 ++-
+ app/config.py                                |  542 +++++-
+ app/core/auth.py                             |  176 +-
+ app/core/errors.py                           |  185 ++
+ app/main.py                                  |  131 +-
+ app/providers/__init__.py                    |   50 +-
+ app/providers/base.py                        |   41 +-
+ app/providers/mock.py                        |  550 +++++-
+ app/providers/ollama.py                      |  250 ++-
+ pyproject.toml                               |    6 +
+ scripts/manage_keys.py                       |   86 +-
+ tests/conftest.py                            |   38 +-
+ tests/integration/test_errors.py             |    5 +-
+ tests/integration/test_ollama_integration.py |    9 +-
+ tests/unit/test_auth.py                      |  119 ++
+ tests/unit/test_config.py                    |  110 ++
+ tests/unit/test_ollama_provider.py           |  134 +-
+ tests/unit/test_schemas.py                   |   16 +-
+ 22 files changed, 7169 insertions(+), 418 deletions(-)
+EXIT_CODE: 0
+
+>>> git status --short --ignored (git status --short --ignored)
+ M .env.example
+ M .gitignore
+ M README.md
+ M app/api/routes.py
+ M app/api/schemas.py
+ M app/config.py
+ M app/core/auth.py
+ M app/core/errors.py
+ M app/main.py
+ M app/providers/__init__.py
+ M app/providers/base.py
+ M app/providers/mock.py
+ M app/providers/ollama.py
+ M pyproject.toml
+ M scripts/manage_keys.py
+ M tests/conftest.py
+ M tests/integration/test_errors.py
+ M tests/integration/test_ollama_integration.py
+ M tests/unit/test_auth.py
+ M tests/unit/test_config.py
+ M tests/unit/test_ollama_provider.py
+ M tests/unit/test_schemas.py
+?? .dockerignore
+?? .env.docker.example
+?? .github/
+?? Dockerfile
+?? LICENSE
+?? app/api/management.py
+?? app/cache/
+?? app/db/
+?? app/evaluation/
+?? app/guardrails/
+?? app/limiter/
+?? app/metrics.py
+?? app/pricing/
+?? app/providers/capabilities.py
+?? app/providers/failover.py
+?? datasets/
+?? docker-compose.yml
+?? docs/
+?? frontend/
+?? scripts/benchmark_cache_audit.py
+?? scripts/benchmark_hardening_verified.py
+?? scripts/benchmark_load.py
+?? scripts/benchmark_safety_classifier.py
+?? scripts/benchmark_semantic_cache.py
+?? scripts/export_usage.py
+?? scripts/run_evaluation.py
+?? tests/integration/test_benchmark_script.py
+?? tests/integration/test_caching.py
+?? tests/integration/test_evaluation.py
+?? tests/integration/test_failover_integration.py
+?? tests/integration/test_guardrails.py
+?? tests/integration/test_live_infrastructure_opt_in.py
+?? tests/integration/test_metrics_integration.py
+?? tests/integration/test_production_readiness.py
+?? tests/integration/test_rate_limiting.py
+?? tests/integration/test_reliability_audit.py
+?? tests/integration/test_safety_classification_integration.py
+?? tests/integration/test_streaming_cache.py
+?? tests/integration/test_streaming_integration.py
+?? tests/integration/test_tools_integration.py
+?? tests/integration/test_usage_and_costs.py
+?? tests/test_security.py
+?? tests/unit/test_cache.py
+?? tests/unit/test_capability_audit.py
+?? tests/unit/test_catalog_consistency.py
+?? tests/unit/test_database.py
+?? tests/unit/test_evaluation.py
+?? tests/unit/test_failover.py
+?? tests/unit/test_guardrails.py
+?? tests/unit/test_management_api.py
+?? tests/unit/test_metrics.py
+?? tests/unit/test_model_catalog_audit.py
+?? tests/unit/test_pricing.py
+?? tests/unit/test_provider_routing_precedence.py
+?? tests/unit/test_rate_limiter.py
+?? tests/unit/test_safety_classification.py
+?? tests/unit/test_semantic_cache.py
+?? tests/unit/test_semantic_cache_safety_audit.py
+?? tests/unit/test_streaming.py
+?? tests/unit/test_streaming_cache.py
+?? tests/unit/test_tools.py
+!! .coverage
+!! .dev_api_key.txt
+!! .env
+!! .pytest_cache/
+!! .venv/
+!! .vscode/
+!! app/__pycache__/
+!! app/api/__pycache__/
+!! app/cache/__pycache__/
+!! app/core/__pycache__/
+!! app/db/__pycache__/
+!! app/evaluation/__pycache__/
+!! app/guardrails/__pycache__/
+!! app/limiter/__pycache__/
+!! app/pricing/__pycache__/
+!! app/providers/__pycache__/
+!! data/
+!! frontend/dist/
+!! frontend/node_modules/
+!! scratch/
+!! scripts/__pycache__/
+!! tests/__pycache__/
+!! tests/integration/__pycache__/
+!! tests/unit/__pycache__/
+EXIT_CODE: 0

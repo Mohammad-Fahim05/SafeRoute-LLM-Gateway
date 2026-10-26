@@ -1,0 +1,90 @@
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .env.example
+	modified:   .gitignore
+	modified:   README.md
+	modified:   app/api/routes.py
+	modified:   app/api/schemas.py
+	modified:   app/config.py
+	modified:   app/core/auth.py
+	modified:   app/core/errors.py
+	modified:   app/main.py
+	modified:   app/providers/__init__.py
+	modified:   app/providers/base.py
+	modified:   app/providers/mock.py
+	modified:   app/providers/ollama.py
+	modified:   pyproject.toml
+	modified:   scripts/manage_keys.py
+	modified:   tests/conftest.py
+	modified:   tests/integration/test_errors.py
+	modified:   tests/integration/test_ollama_integration.py
+	modified:   tests/unit/test_auth.py
+	modified:   tests/unit/test_config.py
+	modified:   tests/unit/test_ollama_provider.py
+	modified:   tests/unit/test_schemas.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.dockerignore
+	.env.docker.example
+	Dockerfile
+	app/api/management.py
+	app/cache/
+	app/db/
+	app/evaluation/
+	app/guardrails/
+	app/limiter/
+	app/metrics.py
+	app/pricing/
+	app/providers/capabilities.py
+	app/providers/failover.py
+	datasets/
+	docker-compose.yml
+	docs/
+	frontend/
+	scripts/benchmark_cache_audit.py
+	scripts/benchmark_hardening_verified.py
+	scripts/benchmark_load.py
+	scripts/benchmark_safety_classifier.py
+	scripts/benchmark_semantic_cache.py
+	scripts/export_usage.py
+	scripts/run_evaluation.py
+	tests/integration/test_benchmark_script.py
+	tests/integration/test_caching.py
+	tests/integration/test_evaluation.py
+	tests/integration/test_failover_integration.py
+	tests/integration/test_guardrails.py
+	tests/integration/test_live_infrastructure_opt_in.py
+	tests/integration/test_metrics_integration.py
+	tests/integration/test_production_readiness.py
+	tests/integration/test_rate_limiting.py
+	tests/integration/test_reliability_audit.py
+	tests/integration/test_safety_classification_integration.py
+	tests/integration/test_streaming_cache.py
+	tests/integration/test_streaming_integration.py
+	tests/integration/test_tools_integration.py
+	tests/integration/test_usage_and_costs.py
+	tests/unit/test_cache.py
+	tests/unit/test_capability_audit.py
+	tests/unit/test_catalog_consistency.py
+	tests/unit/test_database.py
+	tests/unit/test_evaluation.py
+	tests/unit/test_failover.py
+	tests/unit/test_guardrails.py
+	tests/unit/test_management_api.py
+	tests/unit/test_metrics.py
+	tests/unit/test_model_catalog_audit.py
+	tests/unit/test_pricing.py
+	tests/unit/test_provider_routing_precedence.py
+	tests/unit/test_rate_limiter.py
+	tests/unit/test_safety_classification.py
+	tests/unit/test_semantic_cache.py
+	tests/unit/test_semantic_cache_safety_audit.py
+	tests/unit/test_streaming.py
+	tests/unit/test_streaming_cache.py
+	tests/unit/test_tools.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
+* master

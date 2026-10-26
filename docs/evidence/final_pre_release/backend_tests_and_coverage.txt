@@ -1,0 +1,91 @@
+=== Backend Test Suite with Coverage ===
+Timestamp: 2026-10-26T08:58:43.366461+00:00
+Command: ['D:\\SafeRoute LLM Gateway\\.venv\\Scripts\\python.exe', '-m', 'pytest', '-q', '--cov=app', '--cov-report=term-missing']
+Exit Code: 0
+Duration: 67.4s
+
+--- STDOUT ---
+........................................................................ [ 17%]
+........sss............................................................. [ 34%]
+........................................................................ [ 51%]
+........................................................................ [ 68%]
+........................................................................ [ 85%]
+...............................................................          [100%]
+============================== warnings summary ===============================
+tests/integration/test_tools_integration.py::test_unsupported_model_for_tools_rejected
+  C:\Users\fahim\anaconda3\Lib\site-packages\sqlalchemy\sql\compiler.py:4667: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000021623A9B010>
+    def visit_select(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_management_api.py::test_management_request_detail
+  C:\Users\fahim\anaconda3\Lib\inspect.py:293: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000021626246B60>
+    for key, value in ann.items() }
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_semantic_cache.py::test_dissimilar_request_results_in_cache_miss
+  C:\Users\fahim\anaconda3\Lib\asyncio\base_events.py:853: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000002162B7AA6B0>
+    handle = events.Handle(callback, args, self, context)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                              Stmts   Miss  Cover   Missing
+---------------------------------------------------------------
+app\__init__.py                       1      0   100%
+app\api\__init__.py                   0      0   100%
+app\api\management.py               302     46    85%   67, 77, 317-318, 329, 332, 335, 338, 341, 344, 353, 355, 358, 438-439, 498, 504-505, 579-587, 619-624, 652-653, 708-709, 770-771, 779-781, 790-791, 796, 798
+app\api\routes.py                   890    227    74%   158-161, 183, 187-189, 196-205, 211, 215, 224-226, 271-272, 300, 361-377, 383-384, 602-617, 699-700, 745-746, 773-774, 807-808, 857-865, 883-884, 887-915, 921-951, 963-964, 980, 982-984, 1001-1007, 1018-1019, 1027-1028, 1036-1037, 1105-1106, 1138, 1140, 1157, 1163-1183, 1212-1213, 1243, 1280-1288, 1291-1295, 1320-1321, 1335-1336, 1343, 1411-1412, 1438-1439, 1451-1452, 1475-1503, 1523-1524, 1548-1550, 1557-1558, 1565-1566, 1591-1592, 1608-1609, 1632-1664, 1685-1686, 1710-1711, 1718-1719, 1725-1726, 1732-1733, 1771-1772, 1805-1835, 1843-1844, 1861-1862, 1869, 1897-1898, 1938, 1941-1943, 1947-1948, 1951, 1955
+app\api\schemas.py                  186      7    96%   49, 51, 116, 118, 169, 176, 190
+app\cache\__init__.py                 4      0   100%
+app\cache\embeddings.py             154     30    81%   22, 29, 43, 49, 55, 60, 65, 84, 88, 92, 97, 107-109, 114, 118-122, 151-153, 184, 192-193, 229, 237, 250, 259-272
+app\cache\redis_cache.py            156     33    79%   107-112, 125, 130, 165, 171, 182, 184-188, 195, 198-200, 219, 226-228, 236-237, 268-269, 272-276
+app\cache\semantic_cache.py         332     85    74%   84, 91, 93, 97, 195-216, 221-222, 247, 257, 262, 299-301, 305-306, 310-311, 367-368, 383-386, 406-407, 428-436, 448, 457, 461, 467, 515-517, 530, 536-544, 551, 561-563, 567-585, 590-601
+app\config.py                       397     54    86%   151, 171, 173-178, 189, 191-202, 249, 257, 266, 274, 282, 291, 300, 308, 318, 321-327, 330, 339, 358, 403, 413, 417, 425-426, 436-438, 472, 490, 550, 556, 562-563
+app\core\__init__.py                  0      0   100%
+app\core\auth.py                    135     25    81%   48, 60, 78-80, 99-100, 104, 108-110, 122-127, 148-152, 181-182, 199-204, 267
+app\core\errors.py                  129      4    97%   277, 368-370
+app\core\logging.py                  29      0   100%
+app\core\request_context.py          25      0   100%
+app\db\__init__.py                    4      0   100%
+app\db\models.py                     66      0   100%
+app\db\service.py                   110      3    97%   25, 218, 220
+app\db\session.py                    80      7    91%   102, 104, 106, 108, 110, 112-113
+app\evaluation\__init__.py            6      0   100%
+app\evaluation\benchmarker.py       202     16    92%   143, 147, 161-164, 172-173, 251, 259-260, 341, 349-350, 425, 433-434
+app\evaluation\loader.py             32      4    88%   50-53
+app\evaluation\models.py            128      0   100%
+app\evaluation\reporter.py           50     20    60%   70, 72, 76, 78, 83, 90-107, 119-127
+app\evaluation\runner.py            221     46    79%   50-51, 56-64, 67-70, 73, 96-99, 102, 249-250, 278-280, 293-294, 315, 333, 336, 347, 359, 362, 385, 388, 391, 394, 397, 402, 412-417
+app\guardrails\__init__.py           15      0   100%
+app\guardrails\classifier.py        250     43    83%   85, 94, 103, 125, 133-134, 158-160, 203, 208, 230, 248, 329-348, 377-379, 381-383, 407-416, 435, 505-511, 568
+app\guardrails\engine.py             59      8    86%   48-52, 55, 121, 186
+app\guardrails\models.py             37      0   100%
+app\guardrails\pii.py                64      2    97%   58, 114
+app\guardrails\safety_models.py      52      0   100%
+app\limiter\__init__.py               2      0   100%
+app\limiter\redis_limiter.py        115     39    66%   70-91, 168-172, 187, 189-191, 197-201, 203-207, 228-229, 232-236
+app\main.py                         119     24    80%   56-57, 59-60, 72, 74, 110-111, 141-144, 148-157, 170-171
+app\metrics.py                      132     21    84%   214-215, 234, 236, 240, 242, 250-251, 265, 271-272, 307-308, 314-315, 321-322, 328-329, 340-341
+app\pricing\__init__.py               2      0   100%
+app\pricing\calculator.py            48      4    92%   34-37
+app\providers\__init__.py            45      2    96%   69-70
+app\providers\base.py                23      5    78%   29, 34, 41, 46, 54
+app\providers\capabilities.py        63      5    92%   461, 470, 483, 518, 548
+app\providers\failover.py           318     54    83%   146-147, 149-151, 166, 173-178, 267, 317-320, 329, 360-361, 396-397, 435-436, 472, 520, 532, 543-546, 551-558, 583, 603-604, 626-662, 678-679, 705-708, 727
+app\providers\mock.py               191     38    80%   82, 156, 169, 223-225, 262-263, 268-280, 288, 300, 321-434, 439, 444, 450, 508, 595
+app\providers\ollama.py             201     53    74%   76-78, 96, 113, 125-127, 137-139, 144-146, 161-165, 177-178, 233-234, 242, 249, 259, 267-270, 284, 288-289, 297-301, 333, 342-343, 348, 372-382
+---------------------------------------------------------------
+TOTAL                              5375    905    83%
+420 passed, 3 skipped, 3 warnings in 62.31s (0:01:02)
+
+--- STDERR ---
+C:\Users\fahim\anaconda3\Lib\collections\__init__.py:452: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000216266C1030>
+  result = tuple_new(cls, iterable)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<sys>:0: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000002162B66D990>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback

@@ -1,0 +1,16 @@
+=== GET http://127.0.0.1:8000/health ===
+Status: 200
+Body Snippet: {"status":"ok","app":"SafeRoute LLM Gateway","environment":"development"}
+
+=== GET http://127.0.0.1:8000/metrics ===
+Status: 200
+Body Snippet: # HELP saferoute_requests_total Total HTTP requests processed by the gateway
+# TYPE saferoute_requests_total counter
+saferoute_requests_total{provider="gateway",route="other",status="200"} 101.0
+safer
+
+=== GET http://127.0.0.1:8000/api/management/overview ===
+Status: 401
+Body Snippet: {"error":{"type":"authentication_error","code":"invalid_api_key","message":"Missing Authorization header.","request_id":"req_3bff148142d545f2b7f20bb123321617"}}
+
+EXIT_CODE: 0
