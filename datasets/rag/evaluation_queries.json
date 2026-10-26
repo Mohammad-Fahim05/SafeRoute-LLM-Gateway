@@ -1,0 +1,27 @@
+[
+  {
+    "query_id": "q1",
+    "query": "How does SafeRoute handle client disconnection during streaming?",
+    "expected_doc_ids": ["kb_streaming_cancellation"]
+  },
+  {
+    "query_id": "q2",
+    "query": "What PRAGMA settings are configured for SQLite WAL mode concurrency?",
+    "expected_doc_ids": ["kb_sqlite_persistence"]
+  },
+  {
+    "query_id": "q3",
+    "query": "What is the similarity threshold and numeric entity rule for semantic caching?",
+    "expected_doc_ids": ["kb_redis_caching"]
+  },
+  {
+    "query_id": "q4",
+    "query": "How are prompt injection attacks and PII like SSNs handled by guardrails?",
+    "expected_doc_ids": ["kb_guardrails_security"]
+  },
+  {
+    "query_id": "q5",
+    "query": "What technologies and authentication mechanisms power the SafeRoute gateway architecture?",
+    "expected_doc_ids": ["kb_architecture_overview"]
+  }
+]

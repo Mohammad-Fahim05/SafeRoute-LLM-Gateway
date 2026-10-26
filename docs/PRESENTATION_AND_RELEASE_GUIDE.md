@@ -85,25 +85,48 @@ This script is structured for live presentation or video recording using the rea
 > 2. **SQLite Write Transactions:** Under WAL mode, there can only be one active write transaction at a time. Above 150–200 concurrent write operations/sec, disk fsync latency will cause write queue delays.
 > 3. **Python GIL / Asyncio Event Loop:** While FastAPI handles I/O asynchronously, heavy cryptographic operations or vector cosine similarity calculations in the main process can block the event loop. Moving vector similarity calculations to Redis Search or a vector DB sidecar eliminates this."
 
-### Q7: How would you scale this architecture horizontally?
+### Q7: What is the fundamental difference between Semantic Caching and RAG in SafeRoute?
 **Answer:**
-> "To scale SafeRoute to tens of thousands of requests per second:
-> 1. **Stateless Gateway Tier:** Deploy multiple SafeRoute container replicas behind an AWS ALB or NGINX reverse proxy. Since the gateway holds no in-memory state, instances scale horizontally with zero shared memory.
-> 2. **Shared State Layer:** Connect all gateway replicas to a shared Redis Cluster for rate limiting and exact caching.
-> 3. **Persistence Layer:** Migrate SQLite to an Amazon RDS Aurora PostgreSQL cluster with read replicas.
-> 4. **Semantic Cache Tier:** Offload vector indexing and cosine similarity search to a dedicated vector engine like Qdrant or Milvus."
+> "Semantic caching and Retrieval-Augmented Generation (RAG) solve two completely different problems. Semantic caching (`app/cache/`) maps incoming prompt vectors to previously completed model responses in Redis to eliminate redundant LLM inference; it stores prompt-response pairs. In contrast, RAG (`app/rag/`) ingests external, unstructured knowledge corpora, cleans and chunks passages with sliding-window sentence preservation, indexes them with both Okapi BM25 and dense vector embeddings, executes hybrid retrieval with Reciprocal Rank Fusion (RRF) and lexical reranking, and constructs a grounded prompt with explicit source citations (`[Source 1]`) passed to the LLM to generate factually grounded answers. Semantic caching avoids compute; RAG injects external domain truth."
+
+### Q8: How does provider failover behave, and why are non-idempotent requests protected?
+**Answer:**
+> "Provider failover is designed with an idempotency guard. If `PROVIDER_FAILOVER_ENABLED=true` and the primary provider (e.g. local Ollama) fails with a network error or 503 service unavailable *before emitting any tokens*, the gateway intercepts the exception and seamlessly dispatches the request to the configured fallback provider. However, if a failure occurs mid-stream or after partial generation has begun, the gateway deliberately aborts rather than blindly retrying, preventing duplicate token emissions or non-idempotent side effects."
+
+### Q9: How does the API-key mechanism work, and why does it avoid storing plaintext keys?
+**Answer:**
+> "SafeRoute uses an HMAC-SHA256 signature verification architecture. Client keys follow the pattern `gw_test_<random_secret>`. When a client calls the API, the gateway hashes the plaintext key using the server's `AUTH_SECRET` and performs a constant-time comparison against stored verifiers using `hmac.compare_digest()`. Plaintext keys are never stored in the database or serialized to logs; only public key prefixes are kept for auditing."
+
+### Q10: How were the benchmarks measured, and why are they matched-concurrency?
+**Answer:**
+> "Benchmarks were collected using `scripts/benchmark_hardening_verified.py` with 50 distinct requests per workload. We strictly avoided comparing apples to oranges: concurrency-1 uncached Ollama (560.48 ms p50) is compared directly against concurrency-1 exact-cache hits (13.29 ms p50) yielding a 42.17x speedup; concurrency-5 uncached Ollama (2591.52 ms p50) is compared directly against concurrency-5 exact-cache hits (37.44 ms p50) yielding a 69.22x speedup. Cache hit rates were verified via `X-Cache: HIT` telemetry headers."
+
+### Q11: What are the main limitations of the current architecture?
+**Answer:**
+> "The three principal limitations are:
+> 1. Single-node SQLite write serialization: while WAL mode eliminates read-write lock contention, write transactions are serialized, capping write throughput to ~150–200 req/s on disk.
+> 2. Heuristic guardrails: regex and keyword filters provide defense-in-depth against obvious prompt injections and PII, but do not provide formal mathematical safety proofs against subtle multi-turn adversarial jailbreaks.
+> 3. Fixed-window rate limiter: allows boundary-burst anomalies at window transition seconds."
+
+### Q12: How would you safely extend the architecture with new capabilities?
+**Answer:**
+> "Any architectural extension must follow our established decoupling pattern:
+> 1. Keep core gateway routing lean: auxiliary features (like our optional Hybrid RAG extension in `app/rag/`) must remain self-contained with zero runtime overhead on standard proxy routes.
+> 2. Implement fail-open / fail-closed boundaries: any external dependency must have an explicit degraded failure mode.
+> 3. Verify client isolation: all new indices or state must partition strictly by authenticated `client_id`."
 
 ---
 
 ## 3. High-Impact Verified Resume Bullet Points
 
-*Each bullet point is mathematically grounded in verified empirical evidence from `docs/BENCHMARKS.md` and `docs/evidence/`:*
+*Each bullet point is mathematically grounded in verified empirical evidence from `docs/BENCHMARKS.md`, `docs/RAG_ARCHITECTURE_AND_EVALUATION.md`, and `docs/evidence/`:*
 
 - **Architected high-performance LLM Gateway** in Python (FastAPI, Asyncio) providing unified OpenAI-compatible routing, HMAC-SHA256 authentication, and multi-tenant isolation, serving up to **124.41 req/s** warm-cache throughput under concurrent load.
 - **Engineered multi-tier Redis caching system** (exact SHA-256 match and semantic vector similarity) reducing p50 inference latency from **560.48 ms** down to **13.29 ms** at concurrency 1 (a **42.17x speedup**) and from **2591.52 ms** down to **37.44 ms** at concurrency 5 (a **69.22x speedup**) on local `llama3.2:1b` with 100% verified cache hit accuracy.
+- **Developed decoupled Hybrid RAG engine** (`app/rag/`) combining Okapi BM25 sparse keyword retrieval, dense vector cosine similarity, Reciprocal Rank Fusion (RRF, $k=60$), lexical reranking, and citation attribution, achieving **100% Recall@3**, **1.0 MRR**, and **3.21 ms p50 retrieval latency** across benchmark suites.
 - **Implemented real-time SSE streaming engine** with client disconnect cancellation detection, delivering an empirical Time-To-First-Token (TTFT) p50 of **375.05 ms**—a **62.6% reduction in perceived user latency** compared to full 1004.13 ms completions.
 - **Integrated heuristic defense-in-depth guardrails** (regex filters and safety classification) against prompt injection and PII leakage, paired with sub-10ms (p50: 7.66 ms) safe rejection policies and synchronous SQLite WAL audit logging.
-- **Designed robust test automation suite** encompassing **418 automated tests** across unit, integration, and tenant-isolation boundaries, maintaining **83% code coverage** and clean `pip-audit` zero-vulnerability security checks.
+- **Designed robust test automation suite** encompassing **428 automated tests** across unit, integration, tenant-isolation, and RAG boundaries, maintaining **83% code coverage** and clean `pip-audit` zero-vulnerability security checks.
 - **Optimized enterprise React 19/TypeScript dashboard** utilizing route-level `React.lazy` code splitting, slashing initial production bundle payload by **62%** (from **840 kB** down to **318 kB**).
 
 ---
@@ -140,28 +163,10 @@ This script is structured for live presentation or video recording using the rea
 
 ---
 
-## 5. Release Tagging Runbook (`v1.0.0`)
+## 5. Release Status & Version Management
 
-> [!IMPORTANT]
-> Per global safety instructions, release tags, commits, and pushes must only be executed upon explicit user authorization.
+Release tag `v1.0.0` was created at commit `7155d01d9508d95b9ca960eea2a5ffb968f3ba06` on the `master` branch.
 
-When approved, execute the following commands in the workspace root:
-
-```powershell
-# 1. Review status and verify no secrets or unneeded files are staged
-git status
-
-# 2. Stage verified deliverables and evidence
-git add app/ tests/ frontend/ docs/ scripts/ datasets/ .github/ Dockerfile docker-compose.yml .dockerignore prometheus.yml pyproject.toml LICENSE README.md .env.example
-
-# 3. Create release commit
-git commit -m "chore(release): v1.0.0 final release remediation and verification"
-
-# 4. Push to authorized remote (when authorized)
-# git remote add origin <authorized-remote-url>
-# git push -u origin master
-
-# 5. Create annotated release tag ONLY after remote CI is green
-# git tag -a v1.0.0 -m "Release v1.0.0: SafeRoute LLM Gateway with verified matched-concurrency benchmarks, security audit, and container runtime"
-# git push origin v1.0.0
-```
+Per global safety rules:
+- **`v1.0.0` is immutable**: Improvements made after this tag are treated as post-v1.0.0 enhancements.
+- Tags, branches, and commits are not pushed or modified without explicit user authorization.

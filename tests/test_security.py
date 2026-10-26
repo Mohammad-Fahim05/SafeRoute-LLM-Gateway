@@ -64,6 +64,15 @@ def build_security_app(test_db_url: str, cache_enabled: bool = False, max_size: 
     init_db(get_engine(settings.database_url))
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
+
+    if cache_enabled:
+        from app.api.routes import get_cache
+        from app.cache.redis_cache import ExactResponseCache
+        from tests.unit.test_cache import FakeAsyncRedis
+        fake_redis = FakeAsyncRedis()
+        exact_cache = ExactResponseCache(redis_client=fake_redis, settings=settings)
+        app.dependency_overrides[get_cache] = lambda: exact_cache
+
     return app, settings
 
 

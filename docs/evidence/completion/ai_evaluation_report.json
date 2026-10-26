@@ -1,0 +1,119 @@
+{
+  "timestamp_utc": "2026-10-26T19:05:42.992457+00:00",
+  "gateway_evaluation": {
+    "total_requests": 50,
+    "success_rate_pct": 100.0,
+    "error_rate_pct": 0.0,
+    "latency_p50_ms": 12.05,
+    "latency_p95_ms": 49.92,
+    "latency_p99_ms": 101.6,
+    "cache_hit_verified": true,
+    "streaming_mean_ttft_ms": 51.55,
+    "error_handling_verified": true,
+    "usage_accounting_verified": true,
+    "usage_records_verified_count": 59
+  },
+  "semantic_cache_evaluation": {
+    "numeric_entity_safety_enforced": true,
+    "cross_tenant_isolation_verified": true,
+    "labeled_test_cases": 5,
+    "true_positives": 0,
+    "true_negatives": 3,
+    "false_positives": 0,
+    "false_negatives": 2,
+    "accuracy_pct": 60.0,
+    "unsafe_reuse_rate_pct": 0.0
+  },
+  "hybrid_rag_evaluation": {
+    "total_queries": 5,
+    "top_k": 3,
+    "mean_recall_at_k": 1.0,
+    "mean_reciprocal_rank": 1.0,
+    "mean_ndcg_at_k": 1.0,
+    "retrieval_latency_p50_ms": 4.11,
+    "retrieval_latency_p95_ms": 4.52,
+    "answer_faithfulness_pct": 100.0,
+    "query_evaluations": [
+      {
+        "query_id": "q1",
+        "query": "How does SafeRoute handle client disconnection during streaming?",
+        "expected_doc_ids": [
+          "kb_streaming_cancellation"
+        ],
+        "retrieved_doc_ids": [
+          "kb_streaming_cancellation",
+          "kb_architecture_overview",
+          "kb_redis_caching"
+        ],
+        "reciprocal_rank": 1.0,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 3.14
+      },
+      {
+        "query_id": "q2",
+        "query": "What PRAGMA settings are configured for SQLite WAL mode concurrency?",
+        "expected_doc_ids": [
+          "kb_sqlite_persistence"
+        ],
+        "retrieved_doc_ids": [
+          "kb_sqlite_persistence",
+          "kb_streaming_cancellation",
+          "kb_guardrails_security"
+        ],
+        "reciprocal_rank": 1.0,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 4.52
+      },
+      {
+        "query_id": "q3",
+        "query": "What is the similarity threshold and numeric entity rule for semantic caching?",
+        "expected_doc_ids": [
+          "kb_redis_caching"
+        ],
+        "retrieved_doc_ids": [
+          "kb_redis_caching",
+          "kb_redis_caching",
+          "kb_streaming_cancellation"
+        ],
+        "reciprocal_rank": 1.0,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 4.11
+      },
+      {
+        "query_id": "q4",
+        "query": "How are prompt injection attacks and PII like SSNs handled by guardrails?",
+        "expected_doc_ids": [
+          "kb_guardrails_security"
+        ],
+        "retrieved_doc_ids": [
+          "kb_guardrails_security",
+          "kb_sqlite_persistence",
+          "kb_redis_caching"
+        ],
+        "reciprocal_rank": 1.0,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 3.97
+      },
+      {
+        "query_id": "q5",
+        "query": "What technologies and authentication mechanisms power the SafeRoute gateway architecture?",
+        "expected_doc_ids": [
+          "kb_architecture_overview"
+        ],
+        "retrieved_doc_ids": [
+          "kb_architecture_overview",
+          "kb_streaming_cancellation",
+          "kb_guardrails_security"
+        ],
+        "reciprocal_rank": 1.0,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 4.14
+      }
+    ]
+  }
+}

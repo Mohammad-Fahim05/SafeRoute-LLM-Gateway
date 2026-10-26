@@ -1,5 +1,10 @@
 # SafeRoute LLM Gateway
 
+[![CI](https://github.com/Mohammad-Fahim05/SafeRoute-LLM-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Mohammad-Fahim05/SafeRoute-LLM-Gateway/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/Release-v1.0.0-green.svg)](https://github.com/Mohammad-Fahim05/SafeRoute-LLM-Gateway/releases/tag/v1.0.0)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 SafeRoute is a lightweight, reliable, and observable LLM Gateway built with Python and FastAPI. It sits between client applications and AI model providers, standardizing chat completions, enforcing security and authentication, managing timeouts, and providing unified error handling, structured logging, and observability.
 
 ---
@@ -10,6 +15,7 @@ SafeRoute is a lightweight, reliable, and observable LLM Gateway built with Pyth
 - [Gateway Keys vs. Upstream Provider Keys](#gateway-keys-vs-upstream-provider-keys)
 - [Architecture Diagram](#architecture-diagram)
 - [Phase Implementation Status](#phase-implementation-status)
+- [Hybrid RAG & Retrieval Engine (Decoupled Extension)](#hybrid-rag--retrieval-engine)
 - [Project Structure](#project-structure)
 - [Setup and Installation](#setup-and-installation)
 - [Client API-Key Authentication (Phase 2)](#client-api-key-authentication-phase-2)
@@ -2748,7 +2754,11 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions `
 ### Architectural Documentation
 For in-depth design rationale, trade-offs, and failure policies, consult:
 - [Technical Architecture & Design Decisions](docs/ARCHITECTURE.md)
+- [Hybrid RAG & Retrieval Engine Architecture](docs/RAG_ARCHITECTURE_AND_EVALUATION.md)
 - [Performance Benchmarks & Empirical Audit](docs/BENCHMARKS.md)
+- [Security Policy & Key Management](SECURITY.md)
+- [Presentation, Interview Guide & Release Manual](docs/PRESENTATION_AND_RELEASE_GUIDE.md)
+- [AI Systems Comprehensive Evaluation Report](docs/evidence/completion/ai_evaluation_report.md)
 - [Final Release Pipeline Audit](docs/FINAL_RELEASE_AUDIT.md)
 
 ---

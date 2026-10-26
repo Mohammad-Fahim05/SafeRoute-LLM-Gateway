@@ -1,0 +1,32 @@
+[
+  {
+    "doc_id": "kb_architecture_overview",
+    "title": "SafeRoute LLM Gateway Architecture Overview",
+    "content": "SafeRoute LLM Gateway is an asynchronous reverse proxy deployed between client applications and AI inference engines. It centralizes HMAC-SHA256 authentication, request tracking with unique X-Request-ID headers, rate limiting, and dual-tier response caching. The gateway is built on FastAPI and Uvicorn, delivering sub-5ms middleware latency overhead while shielding upstream models from unauthorized traffic.",
+    "metadata": {"category": "architecture", "version": "1.0.0"}
+  },
+  {
+    "doc_id": "kb_redis_caching",
+    "title": "Redis Exact-Match and Semantic Caching Invariants",
+    "content": "SafeRoute employs a multi-tier caching strategy using Redis 7+. Exact caching computes an SHA-256 hash across authenticated client identity, model, temperature, and full message arrays, ensuring 100% deterministic cache hit correctness. Semantic caching computes cosine similarity over dense vector embeddings. If similarity exceeds the 0.85 threshold and does not contain numeric entity collisions, warm responses are returned without invoking upstream compute.",
+    "metadata": {"category": "caching", "version": "1.0.0"}
+  },
+  {
+    "doc_id": "kb_sqlite_persistence",
+    "title": "SQLite WAL Mode and Transactional Durability",
+    "content": "Persistent request and token usage records are committed to an embedded SQLite database located at data/saferoute.db. SQLite is configured with Write-Ahead Logging (PRAGMA journal_mode=WAL) and PRAGMA busy_timeout=15000. Under WAL mode, concurrent read transactions never block writers, and writes never block readers. This design avoids external database dependencies for local and edge deployments.",
+    "metadata": {"category": "database", "version": "1.0.0"}
+  },
+  {
+    "doc_id": "kb_guardrails_security",
+    "title": "Heuristic Input and Output Safety Guardrails",
+    "content": "SafeRoute guardrails provide defense-in-depth protection against prompt injection attacks and sensitive data leakage. The engine uses ReDoS-protected regular expressions to scrub personally identifiable information (PII) including Social Security numbers, credit cards, emails, and cloud API keys. Flagged malicious inputs are blocked with HTTP 400 envelopes before reaching the model.",
+    "metadata": {"category": "security", "version": "1.0.0"}
+  },
+  {
+    "doc_id": "kb_streaming_cancellation",
+    "title": "Real-Time SSE Streaming and Cancellation Propagation",
+    "content": "SafeRoute supports real-time Server-Sent Events (SSE) streaming for chat completions. The gateway continuously monitors client socket liveness using request.is_disconnected(). When a client cancels mid-stream, an asyncio.CancelledError is raised, immediately terminating upstream inference and logging the aborted request as HTTP 499 in SQLite.",
+    "metadata": {"category": "streaming", "version": "1.0.0"}
+  }
+]
