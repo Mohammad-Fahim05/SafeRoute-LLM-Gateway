@@ -124,10 +124,16 @@ from app.db import init_db
 async def lifespan(app: FastAPI):
     """Manage application lifespan resources."""
     import asyncio
-    settings = getattr(app.state, "settings", None) or get_settings()
+    if get_settings in app.dependency_overrides:
+        settings = app.dependency_overrides[get_settings]()
+    else:
+        settings = getattr(app.state, "settings", None) or get_settings()
 
     # 1. Initialize SQLite / relational database tables
-    await asyncio.to_thread(init_db)
+    from app.db.session import get_engine
+    engine = get_engine(settings.database_url)
+    await asyncio.to_thread(init_db, engine)
+
 
     # 2. Pre-warm local safety classifier if enabled to eliminate request-path cold start
     if getattr(settings, "safety_classifier_enabled", False):

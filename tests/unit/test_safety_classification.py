@@ -108,6 +108,7 @@ async def test_mock_safety_classifier_categories():
 @pytest.mark.anyio
 async def test_local_semantic_classifier_evaluation():
     """Verify LocalSemanticSafetyClassifier performs offline semantic inference with zero FP on technical queries."""
+    pytest.importorskip("sentence_transformers")
     classifier = LocalSemanticSafetyClassifier()
     settings = Settings(
         app_env="test",
@@ -136,7 +137,9 @@ async def test_local_semantic_classifier_evaluation():
 @pytest.mark.anyio
 async def test_classifier_timeout_fail_closed_and_fail_open():
     """Verify safety classifier timeout policy handles fail_closed (block) and fail_open (flag) cleanly."""
+    pytest.importorskip("sentence_transformers")
     classifier = LocalSemanticSafetyClassifier()
+
 
     # Fail closed setting with 1 microsecond timeout to force TimeoutError
     settings_closed = Settings(

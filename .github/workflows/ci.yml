@@ -48,6 +48,8 @@ jobs:
           CACHE_ENABLED: "false"
           RATE_LIMIT_ENABLED: "false"
           SAFETY_CLASSIFIER_ENABLED: "false"
+          ACTIVE_PROVIDER: "mock"
+
 
   frontend:
     name: Frontend Lint & Production Build

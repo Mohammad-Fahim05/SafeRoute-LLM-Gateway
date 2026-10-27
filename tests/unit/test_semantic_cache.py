@@ -927,7 +927,9 @@ def test_concurrent_requests_tenant_isolation(test_db_url: str):
 # ==============================================================================
 def test_sentence_transformer_offline_embedding():
     """Verify LocalSentenceTransformerEmbeddingProvider produces normalized vectors offline."""
+    pytest.importorskip("sentence_transformers")
     async def _test():
+
         provider = LocalSentenceTransformerEmbeddingProvider(
             model_name="all-MiniLM-L6-v2",
             version="v1",

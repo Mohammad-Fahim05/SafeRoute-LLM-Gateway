@@ -33,6 +33,7 @@ def build_prod_setup(
         client_keys=[{"client_id": "prod_tester", "verifier": CLIENT_VERIFIER, "enabled": True}],
         allowed_models=["mock-model"],
         default_model="mock-model",
+        active_provider="mock",
         cache_enabled=False,
         rate_limit_enabled=False,
         safety_classifier_enabled=True,
@@ -86,15 +87,18 @@ def test_readiness_probe_returns_503_when_database_fails_in_strict_mode(test_db_
 
 
 @pytest.mark.anyio
-async def test_lifespan_prewarms_safety_model_at_startup():
+async def test_lifespan_prewarms_safety_model_at_startup(test_db_url: str):
     """Verify application lifespan startup event pre-warms local safety classifier to eliminate cold start."""
+    pytest.importorskip("sentence_transformers")
     test_settings = Settings(
         app_env="test",
+        database_url=test_db_url,
         safety_classifier_enabled=True,
         safety_classifier_provider="local",
     )
     app = create_app(test_settings)
     app.dependency_overrides[get_settings] = lambda: test_settings
+
 
     # Track whether _ensure_loaded was invoked during lifespan startup
     prewarmed = False

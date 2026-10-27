@@ -56,8 +56,9 @@ def build_test_setup(
     fake_redis = FakeAsyncRedis()
     cache_instance = ExactResponseCache(redis_client=fake_redis, settings=settings)
 
-    app = create_app()
+    app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
+
     app.dependency_overrides[get_cache] = lambda: cache_instance
 
     return app, settings, fake_redis, key_alice, key_bob

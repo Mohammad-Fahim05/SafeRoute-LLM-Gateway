@@ -46,6 +46,7 @@ def build_rate_limit_test_setup(
             {"client_id": "bob", "verifier": verifier_bob, "enabled": True},
         ],
         allowed_models=["mock-model", "mock-error", "mock-timeout", "mock-malformed"],
+        active_provider="mock",
         database_url=test_db_url,
         # Cache settings
         cache_enabled=cache_enabled,
@@ -69,8 +70,9 @@ def build_rate_limit_test_setup(
     fake_limiter_redis = FakeAsyncRedisForLimiter()
     limiter_instance = RateLimiter(redis_client=fake_limiter_redis, settings=settings)
 
-    app = create_app()
+    app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
+
     app.dependency_overrides[get_cache] = lambda: cache_instance
     app.dependency_overrides[get_rate_limiter] = lambda: limiter_instance
 

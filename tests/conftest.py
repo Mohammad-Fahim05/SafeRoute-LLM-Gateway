@@ -66,9 +66,10 @@ def app(test_settings: Settings):
     from app.db.session import get_engine
     init_db(get_engine(test_settings.database_url))
 
-    application = create_app()
+    application = create_app(test_settings)
     application.dependency_overrides[get_settings] = lambda: test_settings
     return application
+
 
 
 @pytest.fixture

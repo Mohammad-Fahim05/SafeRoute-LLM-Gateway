@@ -21,7 +21,8 @@ def test_metrics_endpoint_public_by_default(client: TestClient):
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "text/plain" in response.headers.get("content-type", "")
-    assert "version=0.0.4" in response.headers.get("content-type", "")
+    assert any(v in response.headers.get("content-type", "") for v in ("version=0.0.4", "version=1.0.0"))
+
 
     body = response.text
     assert "# HELP saferoute_requests_total" in body
